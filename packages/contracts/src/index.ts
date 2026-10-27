@@ -113,6 +113,7 @@ export const snapshotSchema = z
   })
   .superRefine((snapshot, context) => {
     const ids = new Set(snapshot.products.map((product) => product.id));
+
     if (
       ids.size !== snapshot.products.length ||
       snapshot.cart.items.some((item) => !ids.has(item.productId))
@@ -196,6 +197,7 @@ export const proposalSchema = z.strictObject({
   totalMinor: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
   fingerprint: fingerprintSchema,
 });
+
 const command = <T extends string, S extends z.ZodType>(type: T, payload: S) =>
   z.strictObject({
     protocolVersion: z.literal(1),
@@ -203,6 +205,7 @@ const command = <T extends string, S extends z.ZodType>(type: T, payload: S) =>
     type: z.literal(type),
     payload,
   });
+
 export const startPayloadSchema = z.strictObject({
   message: z.string().trim().min(1).max(4000),
   baseRevision: revisionSchema,
@@ -233,6 +236,7 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   ),
   command("heartbeat.pong", z.strictObject({})),
 ]);
+
 const detailsSchema = z.strictObject({
   tool: toolNameSchema.optional(),
   productIds: z.array(idSchema).max(200).optional(),
@@ -245,17 +249,20 @@ const detailsSchema = z.strictObject({
     .enum(["QUESTION", "COMMAND", "MIXED", "CLARIFICATION", "OUT_OF_SCOPE"])
     .optional(),
 });
+
 const stepSchema = z.strictObject({
   stage: runStageSchema,
   label: z.string().max(120),
   durationMs: z.number().min(0).optional(),
   details: detailsSchema.optional(),
 });
+
 const terminalSchema = z.strictObject({
   outcome: z.enum(["completed", "clarification", "failed", "cancelled"]),
   cartStatus: z.enum(["unchanged", "committed"]),
   error: publicErrorSchema.optional(),
 });
+
 const event = <T extends string, S extends z.ZodType>(type: T, payload: S) =>
   z.strictObject({
     protocolVersion: z.literal(1),
@@ -266,6 +273,7 @@ const event = <T extends string, S extends z.ZodType>(type: T, payload: S) =>
     type: z.literal(type),
     payload,
   });
+
 export const eventPayloads = {
   "connection.ready": z.strictObject({
     provider: z.enum(["fake", "openai"]),
@@ -333,6 +341,7 @@ export const persistedStateSchema = z
       messages: state.messages,
       pendingClarification: state.pendingClarification,
     });
+
     if (!result.success)
       context.addIssue({
         code: "custom",

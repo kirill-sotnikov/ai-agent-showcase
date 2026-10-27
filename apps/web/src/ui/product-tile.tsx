@@ -3,6 +3,7 @@ import { Icon } from "./icon";
 
 export function ProductTile({ product }: { product: Product }) {
   const category = product.category.toLowerCase();
+
   return (
     <div
       className={`product-tile ${category.includes("light") ? "sage" : category.includes("audio") ? "lavender" : "sand"}`}

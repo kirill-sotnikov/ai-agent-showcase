@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { idSchema, type Snapshot } from "@shop/contracts";
 import type { ToolGateway } from "../tools/gateway.js";
+
 export const guardResultSchema = z.strictObject({
   verdict: z.enum(["VALID", "SPAM", "UNCERTAIN"]),
 });

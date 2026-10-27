@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -29,10 +30,13 @@ const envSchema = z
     (env) => env.NODE_ENV !== "production" || env.LLM_PROVIDER !== "fake",
     "Fake provider is only available in development and test.",
   );
+
 export type Config = z.infer<typeof envSchema>;
+
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return envSchema.parse(env);
 }
+
 export function readiness(config: Config) {
   if (config.LLM_PROVIDER === "fake")
     return { ready: true, reason: "Development fake provider" };
@@ -43,6 +47,7 @@ export function readiness(config: Config) {
     };
   if (!config.OPENAI_MODEL || config.OPENAI_MODEL.startsWith("your-"))
     return { ready: false, reason: "OPENAI_MODEL is required on the server." };
+
   return {
     ready: true,
     reason:

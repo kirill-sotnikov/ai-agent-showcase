@@ -30,6 +30,7 @@ export interface LockProvider {
     task: () => Promise<T> | T,
   ): Promise<T>;
 }
+
 export function browserLocks(): LockProvider {
   return {
     run: (name, ifAvailable, task) => {
@@ -39,6 +40,7 @@ export function browserLocks(): LockProvider {
             "Editing requires Web Locks. Open this app in a supported browser on localhost or HTTPS.",
           ),
         );
+
       return navigator.locks.request(
         name,
         { mode: "exclusive", ifAvailable },
@@ -48,12 +50,14 @@ export function browserLocks(): LockProvider {
               "STATE_CONFLICT",
               "Another tab is editing this workspace.",
             );
+
           return task();
         },
       );
     },
   };
 }
+
 export function initialState(): PersistedState {
   return {
     schemaVersion: 1,
@@ -69,9 +73,11 @@ export function initialState(): PersistedState {
     commitReceipts: [],
   };
 }
+
 export function isRunning(state: PersistedState) {
   return !!state.activeRun && !terminalStages.has(state.activeRun.stage);
 }
+
 export function snapshotOf(state: PersistedState): Snapshot {
   return snapshotSchema.parse({
     workspaceId: state.workspaceId,
@@ -89,16 +95,20 @@ export function snapshotOf(state: PersistedState): Snapshot {
         : null,
   });
 }
+
 export class WorkspaceStore {
   constructor(
     readonly storage: Pick<Storage, "getItem" | "setItem">,
     readonly locks: LockProvider,
     readonly changed: (state: PersistedState) => void = () => {},
   ) {}
+
   read(): PersistedState | null {
     try {
       const raw = this.storage.getItem(STORAGE_KEY);
+
       if (raw === null) return null;
+
       // v1 is the first public schema. Unknown versions are preserved for explicit recovery.
       return persistedStateSchema.parse(JSON.parse(raw));
     } catch {
@@ -107,28 +117,37 @@ export class WorkspaceStore {
       );
     }
   }
+
   private save(state: PersistedState) {
     const runIds = [
       ...new Set(state.executionHistory.map((event) => event.requestId)),
     ].slice(-LIMITS.runs);
+
     state.executionHistory = state.executionHistory
       .filter((event) => runIds.includes(event.requestId))
       .slice(-1200);
+
     state.messages = state.messages.slice(-LIMITS.messages);
+
     const activeReceipt = state.commitReceipts.find(
       (receipt) => receipt.requestId === state.activeRun?.requestId,
     );
+
     state.commitReceipts = state.commitReceipts
       .filter((receipt) => receipt !== activeReceipt)
       .slice(-99);
+
     if (activeReceipt) state.commitReceipts.push(activeReceipt);
+
     const checked = persistedStateSchema.parse(state);
     const raw = JSON.stringify(checked);
+
     if (new TextEncoder().encode(raw).length > LIMITS.stateBytes)
       throw new DomainError(
         "STORAGE_WRITE_FAILED",
         "Unable to save changes. Saved data is too large.",
       );
+
     try {
       this.storage.setItem(STORAGE_KEY, raw);
     } catch {
@@ -137,32 +156,42 @@ export class WorkspaceStore {
         "Unable to save changes. Check your browser storage space and permissions.",
       );
     }
+
     this.changed(checked);
+
     return checked;
   }
+
   transaction<T>(
     update: (state: PersistedState) => Promise<T> | T,
   ): Promise<T> {
     return this.locks.run(`${STORAGE_KEY}:writer`, false, async () => {
       const state = this.read();
+
       if (!state)
         throw new DomainError(
           "STATE_CONFLICT",
           "Workspace no longer exists. Reload this page.",
         );
+
       const before = JSON.stringify(state);
       const result = await update(state);
+
       if (before !== JSON.stringify(state)) this.save(state);
       else this.changed(state);
+
       return result;
     });
   }
+
   async initialize() {
     await this.locks.run(`${STORAGE_KEY}:writer`, false, () => {
       const state = this.read();
+
       if (state) this.changed(state);
       else this.save(initialState());
     });
+
     // A live run in another tab owns this lock. Never interrupt it during reload.
     try {
       await this.locks.run(`${STORAGE_KEY}:run`, true, () =>
@@ -175,8 +204,10 @@ export class WorkspaceStore {
       if (!(error instanceof DomainError && error.code === "STATE_CONFLICT"))
         throw error;
     }
+
     return this.read()!;
   }
+
   async reset() {
     return this.locks.run(`${STORAGE_KEY}:run`, true, () =>
       this.locks.run(`${STORAGE_KEY}:writer`, false, () =>
@@ -184,6 +215,7 @@ export class WorkspaceStore {
       ),
     );
   }
+
   edit(update: (state: PersistedState) => void) {
     return this.locks.run(`${STORAGE_KEY}:run`, true, () =>
       this.transaction((state) => {
@@ -198,30 +230,36 @@ export class WorkspaceStore {
       }),
     );
   }
+
   setQuantity(productId: string, value: number) {
     return this.edit((state) => {
       state.cart = setQuantity(state.cart, state.products, productId, value);
     });
   }
+
   saveProduct(product: Product) {
     return this.edit((state) => {
       const index = state.products.findIndex(
         (current) => current.id === product.id,
       );
+
       if (index < 0) state.products.push(product);
       else state.products[index] = product;
     });
   }
+
   deleteProduct(productId: string) {
     return this.edit((state) => {
       state.products = state.products.filter(
         (product) => product.id !== productId,
       );
+
       state.cart.items = state.cart.items.filter(
         (item) => item.productId !== productId,
       );
     });
   }
+
   begin(requestId: string, message: string) {
     return this.transaction((state) => {
       if (isRunning(state))
@@ -229,7 +267,9 @@ export class WorkspaceStore {
           "STATE_CONFLICT",
           "A request is already running.",
         );
+
       const snapshot = snapshotOf(state);
+
       state.activeRun = {
         requestId,
         baseRevision: state.stateRevision,
@@ -237,6 +277,7 @@ export class WorkspaceStore {
         stage: "accepted",
         cartStatus: "unchanged",
       };
+
       state.messages.push({
         id: crypto.randomUUID(),
         requestId,
@@ -245,19 +286,23 @@ export class WorkspaceStore {
         timestamp: new Date().toISOString(),
         incomplete: false,
       });
+
       return { message, baseRevision: state.stateRevision, snapshot };
     });
   }
+
   async commit(
     requestId: string,
     untrusted: Proposal,
     isCurrent: () => boolean = () => true,
   ): Promise<CommitReceipt> {
     const proposal = proposalSchema.parse(untrusted);
+
     return this.transaction(async (state) => {
       const existing = state.commitReceipts.find(
         (receipt) => receipt.requestId === requestId,
       );
+
       if (existing) {
         if (
           existing.proposalId !== proposal.proposalId ||
@@ -268,8 +313,10 @@ export class WorkspaceStore {
             "STATE_CONFLICT",
             "This request already committed a different proposal.",
           );
+
         return existing;
       }
+
       if (
         state.activeRun?.requestId !== requestId ||
         !isRunning(state) ||
@@ -289,6 +336,7 @@ export class WorkspaceStore {
         );
       if (!isCurrent())
         throw new DomainError("CANCELLED", "The request is no longer active.");
+
       const receipt: CommitReceipt = {
         requestId,
         proposalId: proposal.proposalId,
@@ -297,14 +345,17 @@ export class WorkspaceStore {
         fingerprint: proposal.fingerprint,
         summary: commitSummary(proposal.nextCart, state.products),
       };
+
       state.cart = proposal.nextCart;
       state.stateRevision++;
       state.pendingClarification = null;
       state.activeRun.cartStatus = "committed";
       state.commitReceipts.push(receipt);
+
       return receipt;
     });
   }
+
   record(event: ServerEvent) {
     return this.transaction((state) => {
       if (state.activeRun?.requestId !== event.requestId || !isRunning(state))
@@ -320,10 +371,12 @@ export class WorkspaceStore {
         state.activeRun.stage = event.payload.stage;
       if (event.type === "clarification.required")
         state.pendingClarification = event.payload;
+
       if (event.type === "assistant.message") {
         state.messages = state.messages.filter(
           (message) => message.id !== event.payload.messageId,
         );
+
         state.messages.push({
           id: event.payload.messageId,
           requestId: event.requestId,
@@ -333,17 +386,20 @@ export class WorkspaceStore {
           incomplete: false,
         });
       }
+
       if (
         event.type === "request.completed" ||
         event.type === "request.failed" ||
         event.type === "request.cancelled"
       ) {
         state.activeRun.stage = event.payload.outcome;
+
         state.activeRun.cartStatus = state.commitReceipts.some(
           (receipt) => receipt.requestId === event.requestId,
         )
           ? "committed"
           : "unchanged";
+
         if (
           event.type !== "request.completed" ||
           event.payload.outcome !== "clarification"
@@ -353,10 +409,12 @@ export class WorkspaceStore {
       }
     });
   }
+
   private ensureReceiptMessage(state: PersistedState, requestId: string) {
     const receipt = state.commitReceipts.find(
       (receipt) => receipt.requestId === requestId,
     );
+
     if (
       receipt &&
       !state.messages.some(
@@ -375,17 +433,21 @@ export class WorkspaceStore {
         incomplete: false,
       });
   }
+
   private interruptState(state: PersistedState) {
     if (!state.activeRun) return;
     state.activeRun.stage = "interrupted";
     state.pendingClarification = null;
+
     state.activeRun.cartStatus = state.commitReceipts.some(
       (receipt) => receipt.requestId === state.activeRun!.requestId,
     )
       ? "committed"
       : "unchanged";
+
     this.ensureReceiptMessage(state, state.activeRun.requestId);
   }
+
   interrupt(requestId: string, cancelled = false) {
     return this.transaction((state) => {
       if (state.activeRun?.requestId !== requestId || !isRunning(state)) return;
@@ -394,6 +456,7 @@ export class WorkspaceStore {
     });
   }
 }
+
 export function cartWithProductRemoved(cart: Cart, productId: string): Cart {
   return { items: cart.items.filter((item) => item.productId !== productId) };
 }

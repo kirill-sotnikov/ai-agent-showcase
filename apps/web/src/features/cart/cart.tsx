@@ -17,6 +17,7 @@ export function Cart({
   pending: boolean;
 }) {
   const count = state.cart.items.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <section className="panel cart-panel" aria-label="Cart">
       <div className="compact-heading">
@@ -41,6 +42,7 @@ export function Cart({
             const product = state.products.find(
               (product) => product.id === item.productId,
             )!;
+
             return (
               <article key={item.productId} className="cart-item">
                 <ProductTile product={product} />
@@ -78,6 +80,7 @@ export function Cart({
                         disabled={disabled}
                         onBlur={(event) => {
                           const value = event.target.value;
+
                           if (
                             value !== "" &&
                             Number.isInteger(Number(value)) &&
@@ -93,6 +96,7 @@ export function Cart({
                               );
                           } else {
                             event.target.value = String(item.quantity);
+
                             client.report(
                               new Error(
                                 "Quantity must be a whole number between 0 and 99.",

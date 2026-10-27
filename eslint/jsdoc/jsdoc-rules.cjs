@@ -15,9 +15,9 @@ const jsdocNoEmptyEnd = require("./jsdoc-rules/jsdoc-no-empty-end.cjs");
  * @type {import('eslint').Linter.FlatConfig}
  */
 const jsdocRules = {
-  files: ["**/*.js"],
+  files: ["**/*.{js,cjs,mjs,ts,tsx}"],
   plugins: {
-    custom: {
+    "custom-jsdoc": {
       rules: {
         // @ts-expect-error
         "jsdoc-multiline": jsdocMultiline,
@@ -37,13 +37,13 @@ const jsdocRules = {
     },
   },
   rules: {
-    "custom/jsdoc-multiline": "warn",
-    "custom/jsdoc-empty-line-before": "warn",
-    "custom/jsdoc-no-empty-start": "warn",
-    "custom/jsdoc-space-after-asterisk": "warn",
-    "custom/jsdoc-multiple-empty-lines": "warn",
-    "custom/jsdoc-empty-line-after": "warn",
-    "custom/jsdoc-no-empty-end": "warn",
+    "custom-jsdoc/jsdoc-multiline": "warn",
+    "custom-jsdoc/jsdoc-empty-line-before": "warn",
+    "custom-jsdoc/jsdoc-no-empty-start": "warn",
+    "custom-jsdoc/jsdoc-space-after-asterisk": "warn",
+    "custom-jsdoc/jsdoc-multiple-empty-lines": "warn",
+    "custom-jsdoc/jsdoc-empty-line-after": "warn",
+    "custom-jsdoc/jsdoc-no-empty-end": "warn",
   },
 };
 

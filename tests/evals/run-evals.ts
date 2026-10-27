@@ -20,8 +20,10 @@ import { runWorkflow } from "../../apps/server/src/ai/orchestrator/workflow.js";
 import { PROMPT_VERSION } from "../../apps/server/src/ai/prompts/v1/shared.js";
 import { initialState, snapshotOf } from "../../apps/web/src/storage/store.js";
 import dataset from "./datasets/shopping-v1.json";
+
 const live = process.argv.includes("--live");
 const config = readConfig();
+
 async function main() {
   const budget = z.object({
     maxCases: z.coerce.number().int().min(1).max(50).default(5),
@@ -29,6 +31,7 @@ async function main() {
     inputPrice: z.coerce.number().nonnegative(),
     outputPrice: z.coerce.number().nonnegative(),
   });
+
   if (live && !readiness({ ...config, LLM_PROVIDER: "openai" }).ready) {
     console.info(
       JSON.stringify({
@@ -37,8 +40,10 @@ async function main() {
         model: config.OPENAI_MODEL ?? null,
       }),
     );
+
     return;
   }
+
   const limits = live
     ? budget.parse({
         maxCases: process.env.EVAL_MAX_CASES,
@@ -47,9 +52,12 @@ async function main() {
         outputPrice: process.env.EVAL_OUTPUT_USD_PER_MILLION,
       })
     : null;
+
   const cases = live ? dataset.slice(0, limits!.maxCases) : dataset;
   const results = [];
+
   let estimatedUSD = 0;
+
   for (const scenario of cases) {
     // Reserve a conservative byte-based input bound per call before spending money.
     const reserve = limits
@@ -58,15 +66,19 @@ async function main() {
             config.MAX_OUTPUT_TOKENS * limits.outputPrice)) /
         1_000_000
       : 0;
+
     if (limits && estimatedUSD + reserve > limits.maxUSD) {
       results.push({
         id: scenario.id,
         status: "skipped",
         reason: "Cost reservation exceeds EVAL_MAX_USD.",
       });
+
       continue;
     }
+
     const state = initialState();
+
     if ("cart" in scenario) state.cart = { items: scenario.cart! };
     if ("emptyCatalog" in scenario) state.products = [];
     if ("identity" in scenario)
@@ -83,13 +95,17 @@ async function main() {
         baseRevision: 0,
         expiresAt: new Date(Date.now() + 60000).toISOString(),
       };
+
     const snapshot = snapshotOf(state);
+
     const provider: Provider = live
       ? new OpenAIProvider(config)
       : new FakeProvider();
+
     if ("fault" in scenario) {
       if (scenario.fault === "malformed-route")
         provider.route = async () => ({ intent: "INVENTED" }) as never;
+
       if (scenario.fault === "provider-failure")
         provider.guard = async () => {
           throw new DomainError(
@@ -97,6 +113,7 @@ async function main() {
             "The model is unavailable.",
           );
         };
+
       if (scenario.fault === "composer-failure")
         provider.present = async () => {
           throw new DomainError(
@@ -105,13 +122,16 @@ async function main() {
           );
         };
     }
+
     let committed: Cart = structuredClone(state.cart);
     let outcome = "missing";
     let cartStatus = "unchanged";
     let prematureClaim = false;
     let didCommit = false;
+
     const events: EventType[] = [];
     const controller = new AbortController();
+
     const timer = setTimeout(
       () =>
         controller.abort(
@@ -119,7 +139,9 @@ async function main() {
         ),
       config.REQUEST_DEADLINE_MS,
     );
+
     const started = performance.now();
+
     try {
       await runWorkflow(
         { message: scenario.message, baseRevision: 0, snapshot },
@@ -130,6 +152,7 @@ async function main() {
           maxToolCalls: config.MAX_TOOL_CALLS,
           emit: (type, payload) => {
             events.push(type);
+
             if (
               (type === "request.completed" ||
                 type === "request.failed" ||
@@ -139,6 +162,7 @@ async function main() {
               outcome = payload.outcome;
               cartStatus = payload.cartStatus;
             }
+
             if (
               type === "assistant.message" &&
               "content" in payload &&
@@ -155,6 +179,7 @@ async function main() {
               );
             committed = proposal.nextCart;
             didCommit = true;
+
             return {
               requestId: crypto.randomUUID(),
               proposalId: proposal.proposalId,
@@ -169,20 +194,25 @@ async function main() {
     } finally {
       clearTimeout(timer);
     }
+
     const expected =
       scenario.expected.items === null
         ? state.cart
         : { items: scenario.expected.items };
+
     const passed =
       outcome === scenario.expected.outcome &&
       canonicalCart(committed) === canonicalCart(expected) &&
       !prematureClaim;
+
     const usage = provider instanceof OpenAIProvider ? provider.usage : null;
+
     if (usage && limits)
       estimatedUSD +=
         (usage.inputTokens * limits.inputPrice +
           usage.outputTokens * limits.outputPrice) /
         1_000_000;
+
     results.push({
       id: scenario.id,
       status: passed ? "passed" : "failed",
@@ -195,6 +225,7 @@ async function main() {
       events,
     });
   }
+
   const report = {
     provider: live ? "openai" : "fake",
     model: live ? config.OPENAI_MODEL : "deterministic-v1",
@@ -206,12 +237,16 @@ async function main() {
     skipped: results.filter((result) => result.status === "skipped").length,
     results,
   };
+
   await mkdir("tests/evals/results", { recursive: true });
+
   await writeFile(
     `tests/evals/results/${live ? "live" : "fake"}-latest.json`,
     JSON.stringify(report, null, 2) + "\n",
   );
+
   console.info(JSON.stringify({ ...report, results: undefined }));
   if (report.failed || (live && report.skipped)) process.exitCode = 1;
 }
+
 await main();

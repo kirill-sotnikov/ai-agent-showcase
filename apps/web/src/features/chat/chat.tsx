@@ -20,13 +20,16 @@ export function Chat({
 }) {
   const [draft, setDraft] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "nearest" });
   }, [state.messages.length, partial]);
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (await client.start(draft)) setDraft("");
   };
+
   return (
     <>
       <div

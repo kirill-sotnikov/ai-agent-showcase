@@ -12,10 +12,13 @@ import {
   WorkspaceStore,
 } from "../../apps/web/src/storage/store.js";
 import { MemoryStorage, TestLocks } from "../helpers.js";
+
 const servers: ReturnType<typeof Fastify>[] = [];
+
 afterEach(async () => {
   await Promise.all(servers.splice(0).map((server) => server.close()));
 });
+
 function response(
   data: unknown,
   model: string,
@@ -64,11 +67,16 @@ function response(
     },
   };
 }
+
 it("uses the configured model for guard, router, dependent tools, and streamed composition through the real SDK", async () => {
   const server = Fastify();
+
   servers.push(server);
+
   const bodies: Record<string, unknown>[] = [];
+
   let toolRound = 0;
+
   server.post("/responses", async (request, reply) => {
     const body = request.body as {
       model: string;
@@ -81,18 +89,25 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
         parameters: { additionalProperties: boolean };
       }[];
     };
+
     bodies.push(body);
+
     let output;
+
     switch (body.text.format.name) {
       case "guard":
         output = response({ verdict: "VALID" }, body.model);
+
         break;
+
       case "route":
         output = response(
           { intent: "MIXED", confidence: 1, clarification: null },
           body.model,
         );
+
         break;
+
       case "agent_result": {
         expect(
           body.tools?.every(
@@ -100,6 +115,7 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
               tool.strict && tool.parameters.additionalProperties === false,
           ),
         ).toBe(true);
+
         const calls = [
           {
             name: "search_products",
@@ -119,6 +135,7 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
             arguments: { productId: seedProducts[0].id, quantity: 1 },
           },
         ];
+
         output = response(
           {
             productIds: [seedProducts[0].id],
@@ -128,8 +145,10 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
           body.model,
           calls[toolRound++],
         );
+
         break;
       }
+
       default:
         output = response(
           {
@@ -140,22 +159,28 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
           body.model,
         );
     }
+
     if (body.stream) {
       const text = JSON.stringify({
         intro: "Here is your saved cart.",
         productIds: [seedProducts[0].id],
         missingInformation: false,
       });
+
       return reply
         .type("text/event-stream")
         .send(
           `event: response.output_text.delta\ndata: ${JSON.stringify({ type: "response.output_text.delta", delta: text })}\n\nevent: response.completed\ndata: ${JSON.stringify({ type: "response.completed", response: output })}\n\n`,
         );
     }
+
     return output;
   });
+
   await server.listen({ host: "127.0.0.1", port: 0 });
+
   const address = server.server.address() as AddressInfo;
+
   const provider = new OpenAIProvider(
     readConfig({
       OPENAI_API_KEY: "test-secret",
@@ -168,14 +193,20 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
       maxRetries: 0,
     }),
   );
+
   const store = new WorkspaceStore(new MemoryStorage(), new TestLocks());
+
   await store.initialize();
+
   const requestId = crypto.randomUUID();
+
   const payload = await store.begin(
     requestId,
     "Find a lamp under $50 and add the cheapest one.",
   );
+
   const events: string[] = [];
+
   await runWorkflow(payload, provider, {
     requestId,
     maxToolCalls: 12,
@@ -187,28 +218,36 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
         expect(event.content).not.toContain("test-secret");
     },
   });
+
   expect(events.at(-1)).toBe("request.completed");
   expect(bodies).toHaveLength(7);
+
   expect(
     bodies.every(
       (body) => body.model === "configured-test-model" && body.store === false,
     ),
   ).toBe(true);
+
   for (const body of bodies) {
     expect(body.reasoning).toEqual({ effort: "none" });
   }
+
   expect(store.read()!.cart.items).toEqual([
     { productId: seedProducts[0].id, quantity: 1 },
   ]);
+
   expect(provider.usage).toMatchObject({
     calls: 7,
     inputTokens: 350,
     outputTokens: 140,
   });
 });
+
 it("normalizes upstream errors without leaking provider payloads", async () => {
   const server = Fastify();
+
   servers.push(server);
+
   server.post("/responses", (_request, reply) =>
     reply.code(401).send({
       error: {
@@ -217,8 +256,11 @@ it("normalizes upstream errors without leaking provider payloads", async () => {
       },
     }),
   );
+
   await server.listen({ host: "127.0.0.1", port: 0 });
+
   const address = server.server.address() as AddressInfo;
+
   const provider = new OpenAIProvider(
     readConfig({
       OPENAI_API_KEY: "test-secret",
@@ -231,6 +273,7 @@ it("normalizes upstream errors without leaking provider payloads", async () => {
       maxRetries: 0,
     }),
   );
+
   await expect(
     provider.guard(
       {

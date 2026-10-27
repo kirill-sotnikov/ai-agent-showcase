@@ -9,7 +9,7 @@ const {
  * @type {import('eslint').Linter.FlatConfig}
  */
 const javascript = {
-  files: ["**/*.{js,cjs,mjs}"],
+  files: ["**/*.{js,cjs,mjs,ts,tsx}"],
 
   plugins: {
     react,

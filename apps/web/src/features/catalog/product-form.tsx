@@ -14,29 +14,37 @@ export function ProductForm({
   onCancel: () => void;
 }) {
   const [error, setError] = useState("");
+
   return (
     <form
       className="product-form"
       onSubmit={(event) => {
         event.preventDefault();
+
         const data = new FormData(event.currentTarget);
         const rawPrice = String(data.get("price"));
+
         try {
           if (!/^\d{1,8}(?:\.\d{1,2})?$/.test(rawPrice)) throw new Error();
+
           const [whole, fraction = ""] = rawPrice.split(".");
+
           const attributes = Object.fromEntries(
             String(data.get("attributes"))
               .split("\n")
               .filter((line) => line.trim())
               .map((line) => {
                 const separator = line.indexOf(":");
+
                 if (separator < 1) throw new Error();
+
                 return [
                   line.slice(0, separator).trim(),
                   line.slice(separator + 1).trim(),
                 ];
               }),
           );
+
           const parsed = productSchema.parse({
             id: product?.id ?? crypto.randomUUID(),
             name: data.get("name"),
@@ -46,6 +54,7 @@ export function ProductForm({
             category: data.get("category"),
             attributes,
           });
+
           onSave(parsed);
         } catch {
           setError(text.productError);

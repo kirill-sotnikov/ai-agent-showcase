@@ -1,5 +1,6 @@
 import { build } from "esbuild";
 import { mkdir, copyFile } from "node:fs/promises";
+
 export const webOptions = {
   entryPoints: ["apps/web/src/main.tsx"],
   bundle: true,
@@ -28,12 +29,15 @@ export const serverOptions = {
   ],
   outfile: "apps/server/dist/index.mjs",
 };
+
 export async function prepare() {
   await mkdir("apps/web/dist", { recursive: true });
   await copyFile("apps/web/index.html", "apps/web/dist/index.html");
 }
+
 if (process.argv[1]?.endsWith("build.mjs")) {
   await prepare();
+
   await Promise.all([
     build({ ...webOptions, minify: true }),
     build(serverOptions),

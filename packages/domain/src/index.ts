@@ -87,6 +87,7 @@ export const seedProducts: Product[] = [
     attributes: { color: "Natural", material: "Cotton" },
   },
 ];
+
 export function assertCart(cart: Cart, products: Product[]) {
   cartSchema.parse(cart);
   if (
@@ -99,8 +100,10 @@ export function assertCart(cart: Cart, products: Product[]) {
       "This product is no longer in the catalog.",
     );
 }
+
 export function cartTotal(cart: Cart, products: Product[]) {
   assertCart(cart, products);
+
   return cart.items.reduce(
     (total, item) =>
       total +
@@ -109,9 +112,11 @@ export function cartTotal(cart: Cart, products: Product[]) {
     0,
   );
 }
+
 export function quantity(cart: Cart, productId: string) {
   return cart.items.find((item) => item.productId === productId)?.quantity ?? 0;
 }
+
 export function setQuantity(
   cart: Cart,
   products: Product[],
@@ -125,14 +130,18 @@ export function setQuantity(
       "INVALID_QUANTITY",
       "Quantity must be a whole number between 0 and 99.",
     );
+
   const items = cart.items.filter((item) => item.productId !== productId);
+
   if (value > 0) items.push({ productId, quantity: value });
+
   return {
     items: items.sort((left, right) =>
       left.productId.localeCompare(right.productId),
     ),
   };
 }
+
 export function normalize(value: string) {
   return value
     .normalize("NFKC")
@@ -140,14 +149,19 @@ export function normalize(value: string) {
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 }
+
 export class CatalogService {
   constructor(readonly products: Product[]) {}
+
   get(productId: string) {
     const product = this.products.find((product) => product.id === productId);
+
     if (!product)
       throw new DomainError("PRODUCT_NOT_FOUND", "Product not found.");
+
     return product;
   }
+
   search(
     query: string,
     category: string | null = null,
@@ -158,6 +172,7 @@ export class CatalogService {
       .split(" ")
       .filter(Boolean)
       .map((token) => token.replace(/s$/, ""));
+
     return this.products
       .filter((product) => {
         const text = normalize(
@@ -168,6 +183,7 @@ export class CatalogService {
             ...Object.values(product.attributes),
           ].join(" "),
         );
+
         return (
           tokens.every((token) => text.includes(token)) &&
           (!category || normalize(product.category) === normalize(category)) &&
@@ -181,6 +197,7 @@ export class CatalogService {
       )
       .slice(0, Math.min(10, limit));
   }
+
   cheapest(products: Product[]) {
     return [...products].sort(
       (left, right) =>
@@ -190,17 +207,22 @@ export class CatalogService {
 }
 export class DraftCartService {
   cart: Cart;
+
   readonly operations: Operation[] = [];
+
   constructor(readonly snapshot: Snapshot) {
     this.cart = structuredClone(snapshot.cart);
   }
+
   change(tool: Operation["tool"], productId: string, amount: number | null) {
     const previousQuantity = quantity(this.cart, productId);
+
     if (tool === "remove_from_cart" && previousQuantity === 0)
       throw new DomainError(
         "CART_ITEM_NOT_FOUND",
         "This product is not in your cart.",
       );
+
     const nextQuantity =
       tool === "add_to_cart"
         ? previousQuantity + amount!
@@ -209,12 +231,14 @@ export class DraftCartService {
           : amount === null
             ? 0
             : Math.max(0, previousQuantity - amount);
+
     this.cart = setQuantity(
       this.cart,
       this.snapshot.products,
       productId,
       nextQuantity,
     );
+
     this.operations.push({
       operationId: crypto.randomUUID(),
       tool,
@@ -222,6 +246,7 @@ export class DraftCartService {
       previousQuantity,
       nextQuantity,
     });
+
     return {
       cart: this.cart,
       totalMinor: cartTotal(this.cart, this.snapshot.products),
@@ -234,19 +259,25 @@ export const canonicalCart = (cart: Cart) =>
       left.productId.localeCompare(right.productId),
     ),
   );
+
 export async function cartFingerprint(cart: Cart) {
   const digest = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(canonicalCart(cart)),
   );
+
   return [...new Uint8Array(digest)]
     .map((byte) => byte.toString(16).padStart(2, "0"))
     .join("");
 }
+
 export function verifyProposal(proposal: Proposal, snapshot: Snapshot) {
   assertCart(proposal.nextCart, snapshot.products);
+
   let replay = structuredClone(snapshot.cart);
+
   const operationIds = new Set<string>();
+
   for (const operation of proposal.operations) {
     if (
       operationIds.has(operation.operationId) ||
@@ -264,6 +295,7 @@ export function verifyProposal(proposal: Proposal, snapshot: Snapshot) {
         "INVALID_REQUEST",
         "Invalid proposed operation direction.",
       );
+
     replay = setQuantity(
       replay,
       snapshot.products,
@@ -271,17 +303,21 @@ export function verifyProposal(proposal: Proposal, snapshot: Snapshot) {
       operation.nextQuantity,
     );
   }
+
   if (
     canonicalCart(replay) !== canonicalCart(proposal.nextCart) ||
     cartTotal(replay, snapshot.products) !== proposal.totalMinor
   )
     throw new DomainError("INVALID_REQUEST", "Invalid proposed totals.");
 }
+
 export const formatMoney = (minor: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     minor / 100,
   );
+
 export function commitSummary(cart: Cart, products: Product[]) {
   const count = cart.items.reduce((total, item) => total + item.quantity, 0);
+
   return `Cart saved. ${count} ${count === 1 ? "item" : "items"}, total ${formatMoney(cartTotal(cart, products))}.`;
 }

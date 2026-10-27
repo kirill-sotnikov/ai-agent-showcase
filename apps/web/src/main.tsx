@@ -14,15 +14,20 @@ import "./styles.css";
 function App() {
   const view = useSyncExternalStore(client.subscribe, client.getSnapshot);
   const [page, setPage] = useState(location.pathname);
+
   useEffect(() => {
     void client.initialize();
+
     const pop = () => setPage(location.pathname);
+
     window.addEventListener("popstate", pop);
+
     return () => {
       client.dispose();
       window.removeEventListener("popstate", pop);
     };
   }, []);
+
   const navigate = (
     event: React.MouseEvent<HTMLAnchorElement>,
     path: string,
@@ -33,12 +38,15 @@ function App() {
     history.pushState(null, "", path);
     setPage(path);
   };
+
   const busy = view.workspace ? isRunning(view.workspace) : false;
   const disabled = busy || !navigator.locks;
+
   const act = (operation: () => Promise<unknown>) => {
     client.clearError();
     void operation().catch((error) => client.report(error));
   };
+
   return (
     <>
       <header className="app-header">
@@ -144,4 +152,5 @@ function App() {
     </>
   );
 }
+
 createRoot(document.getElementById("root")!).render(<App />);

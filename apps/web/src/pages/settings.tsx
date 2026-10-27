@@ -19,6 +19,7 @@ export function Settings({
   const [identity, setIdentity] = useState(state.settings.agentIdentity);
   const [saved, setSaved] = useState(false);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
+
   return (
     <main className="settings-page">
       <div className="settings-title">
@@ -40,11 +41,13 @@ export function Settings({
         <form
           onSubmit={(event) => {
             event.preventDefault();
+
             act(async () => {
               await client.store.edit((current) => {
                 current.settings.agentIdentity =
                   identity.trim() || DEFAULT_IDENTITY;
               });
+
               setSaved(true);
             });
           }}

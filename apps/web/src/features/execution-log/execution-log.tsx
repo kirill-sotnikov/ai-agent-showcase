@@ -5,15 +5,20 @@ import { statuses, text } from "../../ui/text";
 
 export function ExecutionLog({ state }: { state: PersistedState }) {
   const groups = new Map<string, ServerEvent[]>();
+
   for (const event of state.executionHistory) {
     const group = groups.get(event.requestId) ?? [];
+
     group.push(event);
     groups.set(event.requestId, group);
   }
+
   const bottom = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "nearest" });
   }, [state.executionHistory.length]);
+
   return (
     <section className="panel log-panel" aria-label="Execution logs">
       <div className="compact-heading">
@@ -61,6 +66,7 @@ export function ExecutionLog({ state }: { state: PersistedState }) {
                 )
                 .map((event) => {
                   const payload = event.payload;
+
                   const label =
                     "label" in payload
                       ? payload.label
@@ -71,8 +77,10 @@ export function ExecutionLog({ state }: { state: PersistedState }) {
                           : event.type === "request.cancelled"
                             ? "Request cancelled"
                             : "Request failed";
+
                   const running = event.type.endsWith("started");
                   const failed = event.type === "request.failed";
+
                   return (
                     <details
                       className={`log-entry ${failed ? "failed" : ""}`}

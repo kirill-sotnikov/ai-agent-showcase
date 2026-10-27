@@ -16,32 +16,44 @@ const words: Record<string, number> = {
   nine: 9,
   ten: 10,
 };
+
 function amount(value: string | undefined, fallback: number) {
   return value ? (words[value] ?? Number(value)) : fallback;
 }
+
 const mutation = /\b(add|remove|delete|set|buy)\b/i;
+
 function requestText(context: AgentContext) {
   const pending = context.snapshot.pendingClarification;
+
   if (
     pending &&
     pending.baseRevision === context.baseRevision &&
     Date.parse(pending.expiresAt) > Date.now()
   )
     return `${pending.originalMessage}\nChoice: ${context.message}`;
+
   return context.message;
 }
+
 export class FakeProvider implements Provider {
   async guard(_context: AgentContext, signal: AbortSignal) {
     signal.throwIfAborted();
+
     return { verdict: "VALID" as const };
   }
+
   async route(context: AgentContext, signal: AbortSignal): Promise<Route> {
     signal.throwIfAborted();
+
     const message = requestText(context);
+
     const isQuestion =
       /^(?:how (?:do|can)|can i|does|what|is|are)\b/i.test(message) &&
       !/\band (?:add|remove|set|buy)\b/i.test(message);
+
     const isCommand = mutation.test(message) && !isQuestion;
+
     return {
       intent: isCommand
         ? /\b(find|cheapest|compare)\b/i.test(message)
@@ -52,6 +64,7 @@ export class FakeProvider implements Provider {
       clarification: null,
     };
   }
+
   async execute(
     role: "knowledge" | "action",
     context: AgentContext,
@@ -59,10 +72,13 @@ export class FakeProvider implements Provider {
     signal: AbortSignal,
   ): Promise<AgentResult> {
     signal.throwIfAborted();
+
     const text = requestText(context).toLowerCase();
     const pending = context.snapshot.pendingClarification;
     const choice = pending ? normalize(context.message) : "";
+
     let products: Product[] = [];
+
     if (pending && pending.baseRevision === context.baseRevision) {
       products = context.snapshot.products.filter(
         (product) =>
@@ -72,6 +88,7 @@ export class FakeProvider implements Provider {
               .split(" ")
               .some((word) => choice.includes(word))),
       );
+
       if (/^(yes|ok|sure)$/.test(choice) && pending.candidateIds.length === 1)
         products = context.snapshot.products.filter(
           (product) => product.id === pending.candidateIds[0],
@@ -79,6 +96,7 @@ export class FakeProvider implements Provider {
       for (const product of products)
         await gateway.call("get_product", { productId: product.id });
     }
+
     if (products.length === 0) {
       const stopWords = new Set([
         "a",
@@ -115,6 +133,7 @@ export class FakeProvider implements Provider {
         "difference",
         "between",
       ]);
+
       const vocabulary = new Set(
         context.snapshot.products.flatMap((product) =>
           normalize(
@@ -128,14 +147,17 @@ export class FakeProvider implements Provider {
             .map((token) => token.replace(/s$/, "")),
         ),
       );
+
       const query = normalize(context.message)
         .split(" ")
         .map((token) => token.replace(/s$/, ""))
         .filter((token) => !stopWords.has(token) && vocabulary.has(token))
         .join(" ");
+
       const maxPrice = text.match(
         /(?:under|below|less than)\s*\$?(\d+(?:\.\d{1,2})?)/,
       );
+
       products = (await gateway.call("search_products", {
         query,
         category: null,
@@ -144,6 +166,7 @@ export class FakeProvider implements Provider {
           : null,
         limit: 10,
       })) as Product[];
+
       if (/\b(remove|delete)\b/.test(text))
         products = products.filter((product) =>
           context.snapshot.cart.items.some(
@@ -162,12 +185,14 @@ export class FakeProvider implements Provider {
           missingInformation: false,
         };
     }
+
     if (/\bcheapest\b/.test(text) && products.length > 0)
       products = [
         (await gateway.call("choose_cheapest", {
           productIds: products.map((product) => product.id),
         })) as Product,
       ];
+
     if (role === "action") {
       if (
         products.length !== 1 ||
@@ -183,14 +208,18 @@ export class FakeProvider implements Provider {
               : `Which product do you mean: ${products.map((product) => product.name).join(" or ")}?`,
           missingInformation: false,
         };
+
       const productId = products[0].id;
+
       const operationText = pending
         ? pending.originalMessage.toLowerCase()
         : text;
+
       if (/\b(remove|delete)\b/.test(operationText)) {
         const match = operationText.match(
           /(?:remove|delete)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/,
         );
+
         await gateway.call("remove_from_cart", {
           productId,
           quantity: match ? amount(match[1], 1) : null,
@@ -199,12 +228,14 @@ export class FakeProvider implements Provider {
         const match = operationText.match(
           /(?:to|quantity)\s+(\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten)\b/,
         );
+
         if (!match)
           return {
             productIds: [productId],
             clarification: "What quantity would you like?",
             missingInformation: false,
           };
+
         await gateway.call("set_cart_quantity", {
           productId,
           quantity: amount(match[1], 1),
@@ -213,12 +244,14 @@ export class FakeProvider implements Provider {
         const match = operationText.match(
           /(?:add|buy)\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\b/,
         );
+
         await gateway.call("add_to_cart", {
           productId,
           quantity: amount(match?.[1], 1),
         });
       }
     }
+
     return {
       productIds: products.map((product) => product.id),
       clarification: null,
@@ -227,6 +260,7 @@ export class FakeProvider implements Provider {
       ),
     };
   }
+
   async present(
     _context: AgentContext,
     result: AgentResult,
@@ -234,6 +268,7 @@ export class FakeProvider implements Provider {
     signal: AbortSignal,
   ) {
     signal.throwIfAborted();
+
     return {
       intro: committed
         ? ("Here is your saved cart." as const)
