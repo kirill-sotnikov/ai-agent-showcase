@@ -1,0 +1,44 @@
+{
+  "name": "ai-agent-showcase",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others -n service,app \"yarn workspace service dev\" \"yarn workspace app dev\"",
+    "build": "yarn workspace service build && yarn workspace app build",
+    "start": "concurrently --kill-others -n service,app \"yarn workspace service start\" \"yarn workspace app start\"",
+    "typecheck": "yarn workspace service typecheck && yarn workspace app typecheck",
+    "check-eslint": "eslint --cache --max-warnings=0 --report-unused-disable-directives --no-warn-ignored",
+    "check-eslint-all": "yarn check-eslint .",
+    "lint": "yarn check-eslint-all",
+    "lint:fix": "yarn check-eslint-all --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "yarn typecheck && yarn lint && yarn build"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "packageManager": "yarn@4.18.1",
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@stylistic/eslint-plugin": "^5.7.1",
+    "concurrently": "^9.2.1",
+    "eslint": "9.39.5",
+    "eslint-config-canonical": "47.4.2",
+    "eslint-config-next": "16.4.3",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-only-warn": "^1.1.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-refresh": "^0.4.7",
+    "eslint-plugin-simple-import-sort": "^12.1.0",
+    "eslint-plugin-unused-imports": "^4.0.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "version": "0.0.0"
+}
