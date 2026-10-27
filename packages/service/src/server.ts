@@ -483,7 +483,7 @@ export function createServer(
     );
   });
 
-  const webRoot = path.resolve("apps/web/dist");
+  const webRoot = path.resolve("packages/web/dist");
 
   server.addHook("onSend", (_request, reply, _payload, done) => {
     reply

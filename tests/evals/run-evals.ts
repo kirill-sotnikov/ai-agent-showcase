@@ -12,13 +12,19 @@ import {
   DomainError,
   seedProducts,
 } from "@shop/domain";
-import { readConfig, readiness } from "../../apps/server/src/config/index.js";
-import { FakeProvider } from "../../apps/server/src/ai/llm/fake.js";
-import { OpenAIProvider } from "../../apps/server/src/ai/llm/openai.js";
-import type { Provider } from "../../apps/server/src/ai/llm/types.js";
-import { runWorkflow } from "../../apps/server/src/ai/orchestrator/workflow.js";
-import { PROMPT_VERSION } from "../../apps/server/src/ai/prompts/v1/shared.js";
-import { initialState, snapshotOf } from "../../apps/web/src/storage/store.js";
+import {
+  readConfig,
+  readiness,
+} from "../../packages/service/src/config/index.js";
+import { FakeProvider } from "../../packages/service/src/ai/llm/fake.js";
+import { OpenAIProvider } from "../../packages/service/src/ai/llm/openai.js";
+import type { Provider } from "../../packages/service/src/ai/llm/types.js";
+import { runWorkflow } from "../../packages/service/src/ai/orchestrator/workflow.js";
+import { PROMPT_VERSION } from "../../packages/service/src/ai/prompts/v1/shared.js";
+import {
+  initialState,
+  snapshotOf,
+} from "../../packages/web/src/storage/store.js";
 import dataset from "./datasets/shopping-v1.json";
 
 const live = process.argv.includes("--live");

@@ -15,7 +15,7 @@ import {
   setQuantity,
   verifyProposal,
 } from "@shop/domain";
-import { initialState, snapshotOf } from "../apps/web/src/storage/store.js";
+import { initialState, snapshotOf } from "../packages/web/src/storage/store.js";
 
 const productId = seedProducts[0].id;
 

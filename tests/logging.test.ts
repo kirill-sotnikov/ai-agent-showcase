@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 import type { FastifyBaseLogger } from "fastify";
-import { logExecution } from "../apps/server/src/observability/logger.js";
+import { logExecution } from "../packages/service/src/observability/logger.js";
 
 it("keeps technical logs to allowed metadata without message or tool contents", () => {
   const logger = { info: vi.fn(), warn: vi.fn() };

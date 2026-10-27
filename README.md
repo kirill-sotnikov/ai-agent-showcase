@@ -32,7 +32,7 @@ Use the exact model name you intend to evaluate. Every role uses `OPENAI_MODEL`;
 | ------------------- | --------------------------------------------------------------------- |
 | `yarn dev`          | Watch client/server, load server `.env`, run on port 3000             |
 | `yarn dev:fake`     | Same workflow with a development-only fake provider                   |
-| `yarn build`        | Run `build` in `apps/web` and `apps/server` using esbuild              |
+| `yarn build`        | Run `build` in `packages/web` and `packages/service` using esbuild    |
 | `yarn start`        | Load server `.env` and serve the production bundles                   |
 | `yarn typecheck`    | Check all application, shared and test TypeScript                     |
 | `yarn lint`         | ESLint, TypeScript and React Hooks checks                             |
@@ -48,15 +48,15 @@ Install the browser once with `yarn playwright install chromium`. On Linux use `
 ## Architecture
 
 ```text
-apps/web         React SPA: / and /settings, storage, locks, WebSocket client
-apps/server      Fastify HTTP/WebSocket, orchestrator, providers, gateway, Pino logging
+packages/web         React SPA: / and /settings, storage, locks, WebSocket client
+packages/service      Fastify HTTP/WebSocket, orchestrator, providers, gateway, Pino logging
 packages/contracts  Strict Zod domain, persistence and protocol schemas
 packages/domain     Catalog retrieval, draft cart operations, money, validation
 ```
 
 Fastify serves `/`, `/settings`, `/assets/*`, `/ws`, `/health`, and `/ready`. Both development and production use one origin. The browser build includes only React, contracts, domain functions and client code. Vite is used by Vitest as a **test dependency**; the application is developed and built with esbuild and has no Vite config, server, proxy or runtime dependency. The previous Next.js/tRPC starter has been replaced.
 
-The workflow moves through guard → router → knowledge/action tools → validation → optional proposal/ACK → verified response. Mixed requests retrieve and choose before applying dependent draft operations. Knowledge tools cannot write. Tool schemas are validated again in the gateway; quantity limits, product IDs, integer money and the operation chain are checked in code. `choose_cheapest` calculates its selection in code. English prompts are versioned under `apps/server/src/ai/prompts/v1`.
+The workflow moves through guard → router → knowledge/action tools → validation → optional proposal/ACK → verified response. Mixed requests retrieve and choose before applying dependent draft operations. Knowledge tools cannot write. Tool schemas are validated again in the gateway; quantity limits, product IDs, integer money and the operation chain are checked in code. `choose_cheapest` calculates its selection in code. English prompts are versioned under `packages/service/src/ai/prompts/v1`.
 
 The OpenAI adapter supports structured responses, bounded function-call loops, streaming, usage and AbortSignal. Server-side streaming is assembled and validated before display. Product facts are rendered from retrieved catalog fields; model output selects a constrained presentation rather than supplying unrestricted product claims. No hidden reasoning or raw provider output is sent to Logs.
 

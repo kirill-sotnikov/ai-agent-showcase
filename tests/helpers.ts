@@ -1,4 +1,4 @@
-import type { LockProvider } from "../apps/web/src/storage/store.js";
+import type { LockProvider } from "../packages/web/src/storage/store.js";
 import { DomainError } from "@shop/domain";
 
 export class MemoryStorage {

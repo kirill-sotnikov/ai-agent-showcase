@@ -6,15 +6,15 @@ import {
   type ClientCommand,
   type ServerEvent,
 } from "@shop/contracts";
-import { createServer } from "../../apps/server/src/server.js";
-import { readConfig } from "../../apps/server/src/config/index.js";
+import { createServer } from "../../packages/service/src/server.js";
+import { readConfig } from "../../packages/service/src/config/index.js";
 import {
   initialState,
   snapshotOf,
   WorkspaceStore,
-} from "../../apps/web/src/storage/store.js";
-import { FakeProvider } from "../../apps/server/src/ai/llm/fake.js";
-import type { Provider } from "../../apps/server/src/ai/llm/types.js";
+} from "../../packages/web/src/storage/store.js";
+import { FakeProvider } from "../../packages/service/src/ai/llm/fake.js";
+import type { Provider } from "../../packages/service/src/ai/llm/types.js";
 import { MemoryStorage, TestLocks } from "../helpers.js";
 
 const servers: ReturnType<typeof createServer>[] = [];

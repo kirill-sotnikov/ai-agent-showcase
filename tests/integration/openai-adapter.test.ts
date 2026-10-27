@@ -3,14 +3,14 @@ import Fastify from "fastify";
 import OpenAI from "openai";
 import type { AddressInfo } from "node:net";
 import { seedProducts } from "@shop/domain";
-import { OpenAIProvider } from "../../apps/server/src/ai/llm/openai.js";
-import { runWorkflow } from "../../apps/server/src/ai/orchestrator/workflow.js";
-import { readConfig } from "../../apps/server/src/config/index.js";
+import { OpenAIProvider } from "../../packages/service/src/ai/llm/openai.js";
+import { runWorkflow } from "../../packages/service/src/ai/orchestrator/workflow.js";
+import { readConfig } from "../../packages/service/src/config/index.js";
 import {
   initialState,
   snapshotOf,
   WorkspaceStore,
-} from "../../apps/web/src/storage/store.js";
+} from "../../packages/web/src/storage/store.js";
 import { MemoryStorage, TestLocks } from "../helpers.js";
 
 const servers: ReturnType<typeof Fastify>[] = [];

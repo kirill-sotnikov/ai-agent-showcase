@@ -8,14 +8,13 @@
     "node": ">=24"
   },
   "workspaces": [
-    "apps/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "yarn build && yarn dev:watch",
-    "dev:watch": "yarn workspace @shop/web dev & yarn workspace @shop/server dev & NODE_ENV=development node --watch --env-file-if-exists=.env apps/server/dist/index.mjs",
+    "dev:watch": "yarn workspace @shop/web dev & yarn workspace @shop/server dev & NODE_ENV=development node --watch --env-file-if-exists=.env packages/service/dist/index.mjs",
     "build": "yarn workspace @shop/web build && yarn workspace @shop/server build",
-    "start": "node --env-file-if-exists=.env apps/server/dist/index.mjs",
+    "start": "node --env-file-if-exists=.env packages/service/dist/index.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",

@@ -6,15 +6,15 @@ import type {
   ServerEvent,
 } from "@shop/contracts";
 import { commitSummary, seedProducts } from "@shop/domain";
-import { readConfig, readiness } from "../apps/server/src/config/index.js";
-import { FakeProvider } from "../apps/server/src/ai/llm/fake.js";
+import { readConfig, readiness } from "../packages/service/src/config/index.js";
+import { FakeProvider } from "../packages/service/src/ai/llm/fake.js";
 import type {
   AgentContext,
   Provider,
-} from "../apps/server/src/ai/llm/types.js";
-import { runWorkflow } from "../apps/server/src/ai/orchestrator/workflow.js";
-import { ToolGateway } from "../apps/server/src/ai/tools/gateway.js";
-import { initialState, snapshotOf } from "../apps/web/src/storage/store.js";
+} from "../packages/service/src/ai/llm/types.js";
+import { runWorkflow } from "../packages/service/src/ai/orchestrator/workflow.js";
+import { ToolGateway } from "../packages/service/src/ai/tools/gateway.js";
+import { initialState, snapshotOf } from "../packages/web/src/storage/store.js";
 
 async function execute(
   message: string,

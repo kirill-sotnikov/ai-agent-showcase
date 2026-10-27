@@ -768,9 +768,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@shop/server@workspace:apps/server":
+"@shop/server@workspace:packages/service":
   version: 0.0.0-use.local
-  resolution: "@shop/server@workspace:apps/server"
+  resolution: "@shop/server@workspace:packages/service"
   dependencies:
     "@fastify/websocket": "npm:11.3.4"
     "@shop/contracts": "workspace:*"
@@ -781,9 +781,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@shop/web@workspace:apps/web":
+"@shop/web@workspace:packages/web":
   version: 0.0.0-use.local
-  resolution: "@shop/web@workspace:apps/web"
+  resolution: "@shop/web@workspace:packages/web"
   dependencies:
     "@shop/contracts": "workspace:*"
     "@shop/domain": "workspace:*"

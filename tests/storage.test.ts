@@ -5,7 +5,7 @@ import {
   snapshotOf,
   STORAGE_KEY,
   WorkspaceStore,
-} from "../apps/web/src/storage/store.js";
+} from "../packages/web/src/storage/store.js";
 import { MemoryStorage, TestLocks } from "./helpers.js";
 
 let storage: MemoryStorage;
