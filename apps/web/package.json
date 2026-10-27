@@ -1,0 +1,12 @@
+{
+  "name": "@shop/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@shop/contracts": "workspace:*",
+    "@shop/domain": "workspace:*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  }
+}

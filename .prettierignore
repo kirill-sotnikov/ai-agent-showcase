@@ -9,3 +9,7 @@
 **/next-env.d.ts
 **/*.tsbuildinfo
 yarn.lock
+
+# Browser artifacts
+test-results/
+playwright-report/

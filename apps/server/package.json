@@ -1,0 +1,14 @@
+{
+  "name": "@shop/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@fastify/websocket": "11.3.4",
+    "@shop/contracts": "workspace:*",
+    "@shop/domain": "workspace:*",
+    "fastify": "5.12.7",
+    "openai": "7.43.0",
+    "ws": "8.21.0"
+  }
+}
