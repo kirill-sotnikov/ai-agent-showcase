@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { idSchema, type Snapshot } from "@shop/contracts";
+import { idSchema, type Snapshot } from "@shop/shared/contracts";
 import type { ToolGateway } from "../tools/gateway.js";
 
 export const guardResultSchema = z.strictObject({

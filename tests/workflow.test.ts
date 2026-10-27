@@ -4,8 +4,9 @@ import type {
   EventType,
   Proposal,
   ServerEvent,
-} from "@shop/contracts";
-import { commitSummary, seedProducts } from "@shop/domain";
+} from "@shop/shared/contracts";
+import { commitSummary } from "@shop/shared/domain";
+import { seedProducts } from "@shop/shared/defaults";
 import { readConfig, readiness } from "../packages/service/src/config/index.js";
 import { FakeProvider } from "../packages/service/src/ai/llm/fake.js";
 import type {

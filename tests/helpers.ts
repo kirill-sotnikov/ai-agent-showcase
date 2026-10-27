@@ -1,5 +1,5 @@
 import type { LockProvider } from "../packages/web/src/storage/store.js";
-import { DomainError } from "@shop/domain";
+import { DomainError } from "@shop/shared/domain";
 
 export class MemoryStorage {
   values = new Map<string, string>();

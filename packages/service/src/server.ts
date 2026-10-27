@@ -10,8 +10,8 @@ import {
   type EventPayload,
   type EventType,
   type Proposal,
-} from "@shop/contracts";
-import { commitSummary, DomainError } from "@shop/domain";
+} from "@shop/shared/contracts";
+import { commitSummary, DomainError } from "@shop/shared/domain";
 import { readConfig, readiness, type Config } from "./config/index.js";
 import { FakeProvider } from "./ai/llm/fake.js";
 import { OpenAIProvider } from "./ai/llm/openai.js";

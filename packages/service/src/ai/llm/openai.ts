@@ -5,7 +5,7 @@ import type {
   Response,
 } from "openai/resources/responses/responses";
 import { z } from "zod";
-import { DomainError } from "@shop/domain";
+import { DomainError } from "@shop/shared/domain";
 import type { Config } from "../../config/index.js";
 import { actionPrompt } from "../prompts/v1/action.js";
 import { composerPrompt } from "../prompts/v1/composer.js";

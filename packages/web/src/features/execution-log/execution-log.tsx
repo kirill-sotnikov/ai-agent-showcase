@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { PersistedState, ServerEvent } from "@shop/contracts";
+import type { PersistedState, ServerEvent } from "@shop/shared/contracts";
 import { Icon } from "../../ui/icon";
 import { statuses, text } from "../../ui/text";
 

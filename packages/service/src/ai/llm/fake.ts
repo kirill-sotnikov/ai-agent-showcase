@@ -1,5 +1,5 @@
-import type { Product } from "@shop/contracts";
-import { normalize } from "@shop/domain";
+import type { Product } from "@shop/shared/contracts";
+import { normalize } from "../../domain/catalog.js";
 import type { ToolGateway } from "../tools/gateway.js";
 import type { AgentContext, AgentResult, Provider, Route } from "./types.js";
 

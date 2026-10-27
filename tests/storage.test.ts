@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { Proposal } from "@shop/contracts";
-import { cartFingerprint, DraftCartService, seedProducts } from "@shop/domain";
+import type { Proposal } from "@shop/shared/contracts";
+import { cartFingerprint } from "@shop/shared/domain";
+import { DraftCartService } from "../packages/service/src/domain/draft-cart.js";
+import { seedProducts } from "@shop/shared/defaults";
 import {
   snapshotOf,
   STORAGE_KEY,

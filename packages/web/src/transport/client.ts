@@ -6,8 +6,8 @@ import {
   type PersistedState,
   type Proposal,
   type ServerEvent,
-} from "@shop/contracts";
-import { DomainError } from "@shop/domain";
+} from "@shop/shared/contracts";
+import { DomainError } from "@shop/shared/domain";
 import {
   browserLocks,
   isRunning,

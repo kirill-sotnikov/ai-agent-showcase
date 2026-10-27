@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { PersistedState, Product } from "@shop/contracts";
-import { DEFAULT_IDENTITY, formatMoney } from "@shop/domain";
+import type { PersistedState, Product } from "@shop/shared/contracts";
+import { DEFAULT_IDENTITY } from "@shop/shared/defaults";
+import { formatMoney } from "@shop/shared/money";
 import { client } from "../workspace";
 import { Icon } from "../ui/icon";
 import { ProductTile } from "../ui/product-tile";

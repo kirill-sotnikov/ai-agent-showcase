@@ -5,7 +5,7 @@ import {
   serverEventSchema,
   type ClientCommand,
   type ServerEvent,
-} from "@shop/contracts";
+} from "@shop/shared/contracts";
 import { createServer } from "../../packages/service/src/server.js";
 import { readConfig } from "../../packages/service/src/config/index.js";
 import {

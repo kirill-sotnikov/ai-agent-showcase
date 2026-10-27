@@ -48,13 +48,19 @@ Install the browser once with `yarn playwright install chromium`. On Linux use `
 ## Architecture
 
 ```text
-packages/web         React SPA: / and /settings, storage, locks, WebSocket client
-packages/service      Fastify HTTP/WebSocket, orchestrator, providers, gateway, Pino logging
-packages/contracts  Strict Zod domain, persistence and protocol schemas
-packages/domain     Catalog retrieval, draft cart operations, money, validation
+packages/web      React SPA: / and /settings, storage, locks, WebSocket client
+packages/service  Fastify HTTP/WebSocket, orchestrator, providers, gateway, Pino logging
+  src/domain      Server-only catalog retrieval and draft cart operations
+packages/shared   Shared code used by both applications
+  src/contracts   Strict Zod domain, persistence and protocol schemas
+  src/domain      Cart operations, invariants, fingerprints and proposal validation
+  src/defaults.ts Initial catalog and agent identity
+  src/money.ts    Money formatting
 ```
 
-Fastify serves `/`, `/settings`, `/assets/*`, `/ws`, `/health`, and `/ready`. Both development and production use one origin. The browser build includes only React, contracts, domain functions and client code. Vite is used by Vitest as a **test dependency**; the application is developed and built with esbuild and has no Vite config, server, proxy or runtime dependency. The previous Next.js/tRPC starter has been replaced.
+Shared modules are imported through `@shop/shared/contracts`, `@shop/shared/domain`, `@shop/shared/defaults`, and `@shop/shared/money`. Catalog and draft cart services stay inside the server.
+
+Fastify serves `/`, `/settings`, `/assets/*`, `/ws`, `/health`, and `/ready`. Both development and production use one origin. The browser build includes only React, shared contracts and domain functions, defaults, money formatting and client code. Vite is used by Vitest as a **test dependency**; the application is developed and built with esbuild and has no Vite config, server, proxy or runtime dependency. The previous Next.js/tRPC starter has been replaced.
 
 The workflow moves through guard → router → knowledge/action tools → validation → optional proposal/ACK → verified response. Mixed requests retrieve and choose before applying dependent draft operations. Knowledge tools cannot write. Tool schemas are validated again in the gateway; quantity limits, product IDs, integer money and the operation chain are checked in code. `choose_cheapest` calculates its selection in code. English prompts are versioned under `packages/service/src/ai/prompts/v1`.
 

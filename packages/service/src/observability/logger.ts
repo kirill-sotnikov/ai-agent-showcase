@@ -1,5 +1,5 @@
 import type { FastifyBaseLogger } from "fastify";
-import type { EventPayload, EventType } from "@shop/contracts";
+import type { EventPayload, EventType } from "@shop/shared/contracts";
 
 // Technical logs use a fixed metadata allowlist. Never serialize event payloads,
 // catalog data, messages, custom identity, provider errors or tool arguments.

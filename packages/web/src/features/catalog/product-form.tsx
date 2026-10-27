@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { productSchema, type Product } from "@shop/contracts";
+import { productSchema, type Product } from "@shop/shared/contracts";
 import { text } from "../../ui/text";
 
 export function ProductForm({

@@ -1,4 +1,4 @@
-import type { Product } from "@shop/contracts";
+import type { Product } from "@shop/shared/contracts";
 import { Icon } from "./icon";
 
 export function ProductTile({ product }: { product: Product }) {

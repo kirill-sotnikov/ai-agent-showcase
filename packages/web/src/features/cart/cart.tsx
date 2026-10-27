@@ -1,5 +1,6 @@
-import type { PersistedState } from "@shop/contracts";
-import { cartTotal, formatMoney } from "@shop/domain";
+import type { PersistedState } from "@shop/shared/contracts";
+import { cartTotal } from "@shop/shared/domain";
+import { formatMoney } from "@shop/shared/money";
 import { client } from "../../workspace";
 import { Icon } from "../../ui/icon";
 import { ProductTile } from "../../ui/product-tile";

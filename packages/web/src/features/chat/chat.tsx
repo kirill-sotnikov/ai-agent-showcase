@@ -1,6 +1,6 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import type { PersistedState } from "@shop/contracts";
+import type { PersistedState } from "@shop/shared/contracts";
 import { client } from "../../workspace";
 import { Icon } from "../../ui/icon";
 import { statuses, text } from "../../ui/text";

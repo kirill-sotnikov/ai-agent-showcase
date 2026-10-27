@@ -5,13 +5,10 @@ import {
   type SafeDetails,
   type Snapshot,
   type ToolName,
-} from "@shop/contracts";
-import {
-  CatalogService,
-  cartTotal,
-  DomainError,
-  DraftCartService,
-} from "@shop/domain";
+} from "@shop/shared/contracts";
+import { CatalogService } from "../../domain/catalog.js";
+import { cartTotal, DomainError } from "@shop/shared/domain";
+import { DraftCartService } from "../../domain/draft-cart.js";
 
 export const chooseCheapestSchema = z.strictObject({
   productIds: z.array(idSchema).min(1).max(10),

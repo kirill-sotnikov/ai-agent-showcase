@@ -14,16 +14,16 @@ import {
   type RunStage,
   type Snapshot,
   type StartPayload,
-} from "@shop/contracts";
+} from "@shop/shared/contracts";
 import {
   canonicalCart,
   cartFingerprint,
   cartTotal,
   commitSummary,
   DomainError,
-  formatMoney,
   verifyProposal,
-} from "@shop/domain";
+} from "@shop/shared/domain";
+import { formatMoney } from "@shop/shared/money";
 import { ToolGateway } from "../tools/gateway.js";
 
 export type Emit = <T extends EventType>(

@@ -5,16 +5,16 @@ import {
   persistedStateSchema,
   productSchema,
   snapshotSchema,
-} from "@shop/contracts";
+} from "@shop/shared/contracts";
+import { CatalogService } from "../packages/service/src/domain/catalog.js";
 import {
-  CatalogService,
   cartFingerprint,
   cartTotal,
-  DraftCartService,
-  seedProducts,
   setQuantity,
   verifyProposal,
-} from "@shop/domain";
+} from "@shop/shared/domain";
+import { DraftCartService } from "../packages/service/src/domain/draft-cart.js";
+import { seedProducts } from "@shop/shared/defaults";
 import { initialState, snapshotOf } from "../packages/web/src/storage/store.js";
 
 const productId = seedProducts[0].id;

@@ -752,32 +752,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@shop/contracts@workspace:*, @shop/contracts@workspace:packages/contracts":
-  version: 0.0.0-use.local
-  resolution: "@shop/contracts@workspace:packages/contracts"
-  dependencies:
-    zod: "npm:4.6.7"
-  languageName: unknown
-  linkType: soft
-
-"@shop/domain@workspace:*, @shop/domain@workspace:packages/domain":
-  version: 0.0.0-use.local
-  resolution: "@shop/domain@workspace:packages/domain"
-  dependencies:
-    "@shop/contracts": "workspace:*"
-  languageName: unknown
-  linkType: soft
-
 "@shop/server@workspace:packages/service":
   version: 0.0.0-use.local
   resolution: "@shop/server@workspace:packages/service"
   dependencies:
     "@fastify/websocket": "npm:11.3.4"
-    "@shop/contracts": "workspace:*"
-    "@shop/domain": "workspace:*"
+    "@shop/shared": "workspace:*"
     fastify: "npm:5.12.7"
     openai: "npm:7.43.0"
     ws: "npm:8.21.0"
+  languageName: unknown
+  linkType: soft
+
+"@shop/shared@workspace:*, @shop/shared@workspace:packages/shared":
+  version: 0.0.0-use.local
+  resolution: "@shop/shared@workspace:packages/shared"
+  dependencies:
+    zod: "npm:4.6.7"
   languageName: unknown
   linkType: soft
 
@@ -785,8 +776,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@shop/web@workspace:packages/web"
   dependencies:
-    "@shop/contracts": "workspace:*"
-    "@shop/domain": "workspace:*"
+    "@shop/shared": "workspace:*"
     react: "npm:19.3.0"
     react-dom: "npm:19.3.0"
   languageName: unknown

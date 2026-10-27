@@ -9,8 +9,7 @@
     "dev": "yarn bundle --watch=forever --define:process.env.NODE_ENV=\\\"development\\\""
   },
   "dependencies": {
-    "@shop/contracts": "workspace:*",
-    "@shop/domain": "workspace:*",
+    "@shop/shared": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   }

@@ -11,16 +11,15 @@ import {
   type Proposal,
   type ServerEvent,
   type Snapshot,
-} from "@shop/contracts";
+} from "@shop/shared/contracts";
 import {
   cartFingerprint,
   commitSummary,
-  DEFAULT_IDENTITY,
   DomainError,
-  seedProducts,
   setQuantity,
   verifyProposal,
-} from "@shop/domain";
+} from "@shop/shared/domain";
+import { DEFAULT_IDENTITY, seedProducts } from "@shop/shared/defaults";
 
 export const STORAGE_KEY = "ai-shopping-assistant:v1";
 export interface LockProvider {

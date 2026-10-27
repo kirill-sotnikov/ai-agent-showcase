@@ -5,13 +5,9 @@ import {
   type CommitReceipt,
   type EventType,
   type Proposal,
-} from "@shop/contracts";
-import {
-  canonicalCart,
-  commitSummary,
-  DomainError,
-  seedProducts,
-} from "@shop/domain";
+} from "@shop/shared/contracts";
+import { canonicalCart, commitSummary, DomainError } from "@shop/shared/domain";
+import { seedProducts } from "@shop/shared/defaults";
 import {
   readConfig,
   readiness,

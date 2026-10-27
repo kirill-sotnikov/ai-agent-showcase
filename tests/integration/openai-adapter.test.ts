@@ -2,7 +2,7 @@ import { afterEach, expect, it } from "vitest";
 import Fastify from "fastify";
 import OpenAI from "openai";
 import type { AddressInfo } from "node:net";
-import { seedProducts } from "@shop/domain";
+import { seedProducts } from "@shop/shared/defaults";
 import { OpenAIProvider } from "../../packages/service/src/ai/llm/openai.js";
 import { runWorkflow } from "../../packages/service/src/ai/orchestrator/workflow.js";
 import { readConfig } from "../../packages/service/src/config/index.js";
