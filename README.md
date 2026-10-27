@@ -32,7 +32,7 @@ Use the exact model name you intend to evaluate. Every role uses `OPENAI_MODEL`;
 | ------------------- | --------------------------------------------------------------------- |
 | `yarn dev`          | Watch client/server, load server `.env`, run on port 3000             |
 | `yarn dev:fake`     | Same workflow with a development-only fake provider                   |
-| `yarn build`        | Bundle the React client and server using esbuild                      |
+| `yarn build`        | Run `build` in `apps/web` and `apps/server` using esbuild              |
 | `yarn start`        | Load server `.env` and serve the production bundles                   |
 | `yarn typecheck`    | Check all application, shared and test TypeScript                     |
 | `yarn lint`         | ESLint, TypeScript and React Hooks checks                             |

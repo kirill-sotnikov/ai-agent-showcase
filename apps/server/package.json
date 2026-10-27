@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --external:fastify --external:openai '--external:openai/*' --external:ws --external:@fastify/websocket --external:zod --outfile=dist/index.mjs",
+    "dev": "yarn build --watch=forever"
+  },
   "dependencies": {
     "@fastify/websocket": "11.3.4",
     "@shop/contracts": "workspace:*",

@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "bundle": "esbuild src/main.tsx --bundle --format=esm --outdir=dist/assets --sourcemap --target=es2022",
+    "build": "yarn bundle --minify --define:process.env.NODE_ENV=\\\"${NODE_ENV:-production}\\\" && cp index.html dist/index.html",
+    "dev": "yarn bundle --watch=forever --define:process.env.NODE_ENV=\\\"development\\\""
+  },
   "dependencies": {
     "@shop/contracts": "workspace:*",
     "@shop/domain": "workspace:*",

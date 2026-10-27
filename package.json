@@ -12,8 +12,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "build": "node scripts/build.mjs",
+    "dev": "yarn build && yarn dev:watch",
+    "dev:watch": "yarn workspace @shop/web dev & yarn workspace @shop/server dev & NODE_ENV=development node --watch --env-file-if-exists=.env apps/server/dist/index.mjs",
+    "build": "yarn workspace @shop/web build && yarn workspace @shop/server build",
     "start": "node --env-file-if-exists=.env apps/server/dist/index.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
@@ -26,7 +27,7 @@
     "eval:fake": "node --import tsx tests/evals/run-evals.ts",
     "eval:live": "node --env-file-if-exists=.env --import tsx tests/evals/run-evals.ts --live",
     "check": "yarn typecheck && yarn lint && yarn test && yarn build",
-    "dev:fake": "node scripts/dev.mjs --fake"
+    "dev:fake": "LLM_PROVIDER=fake yarn dev"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
