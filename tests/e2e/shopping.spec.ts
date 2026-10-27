@@ -13,7 +13,7 @@ async function send(page: Page, message: string) {
 }
 
 async function completed(page: Page) {
-  await expect(page.locator(".run-status")).toContainText("Completed");
+  await expect(page.getByTestId("run-status")).toContainText("Completed");
 }
 
 test("search → cheapest commit → partial remove → reload", async ({ page }) => {
@@ -27,7 +27,7 @@ test("search → cheapest commit → partial remove → reload", async ({ page }
     cart.getByRole("heading", { name: "Arc Desk Lamp" }),
   ).toBeVisible();
 
-  await expect(cart.locator(".cart-total")).toContainText("$39.00");
+  await expect(cart.getByTestId("cart-total")).toContainText("$39.00");
   await send(page, "Add two of the blue mugs.");
   await completed(page);
 
@@ -43,15 +43,15 @@ test("search → cheapest commit → partial remove → reload", async ({ page }
   ).toHaveValue("1");
 
   await page.reload();
-  await expect(cart.locator(".cart-total")).toContainText("$57.00");
+  await expect(cart.getByTestId("cart-total")).toContainText("$57.00");
 
   await expect(
     cart.getByLabel("Blue Ceramic Mug quantity", { exact: true }),
   ).toHaveValue("1");
 
-  await expect(page.locator(".message.assistant").last()).toContainText(
-    "Cart saved.",
-  );
+  await expect(
+    page.locator('[data-message-role="assistant"]').last(),
+  ).toContainText("Cart saved.");
 });
 
 test("clarifies an ambiguous item and accepts a short follow-up", async ({
@@ -60,7 +60,7 @@ test("clarifies an ambiguous item and accepts a short follow-up", async ({
   await page.goto("/");
   await send(page, "Add the headphones.");
 
-  await expect(page.locator(".run-status")).toContainText(
+  await expect(page.getByTestId("run-status")).toContainText(
     "Waiting for clarification",
   );
 
@@ -70,7 +70,7 @@ test("clarifies an ambiguous item and accepts a short follow-up", async ({
 
   await send(page, "Cloud");
   await completed(page);
-  await expect(page.locator(".cart-total")).toContainText("$89.00");
+  await expect(page.getByTestId("cart-total")).toContainText("$89.00");
 });
 
 test("identity and product CRUD persist, including an empty catalog", async ({
@@ -120,7 +120,7 @@ test("identity and product CRUD persist, including an empty catalog", async ({
   );
 
   const product = page
-    .locator(".catalog-item")
+    .getByTestId("catalog-item")
     .filter({ hasText: "Oak Reading Light" });
 
   await product.getByRole("button", { name: "Edit", exact: true }).click();
@@ -166,7 +166,7 @@ test("quota failure rejects proposal without a saved change", async ({
   });
 
   await send(page, "Add the Arc Desk Lamp");
-  await expect(page.locator(".run-status")).toContainText("Failed");
+  await expect(page.getByTestId("run-status")).toContainText("Failed");
 
   await expect(
     page.getByRole("heading", { name: "Your cart is empty" }),
@@ -195,13 +195,13 @@ test("lost ACK and reload preserve committed cart without replay", async ({
 
   await page.goto("/");
   await send(page, "Add the Arc Desk Lamp");
-  await expect(page.locator(".cart-total")).toContainText("$39.00");
+  await expect(page.getByTestId("cart-total")).toContainText("$39.00");
   await page.reload();
-  await expect(page.locator(".run-status")).toContainText("Interrupted");
+  await expect(page.getByTestId("run-status")).toContainText("Interrupted");
 
-  await expect(page.locator(".message.assistant").last()).toContainText(
-    "Cart saved. 1 item, total $39.00. Response interrupted.",
-  );
+  await expect(
+    page.locator('[data-message-role="assistant"]').last(),
+  ).toContainText("Cart saved. 1 item, total $39.00. Response interrupted.");
 
   expect(
     await page.evaluate(
@@ -241,7 +241,7 @@ test("another tab cannot edit during a run and Stop wins before proposal", async
 
   await page.getByRole("button", { name: "Stop", exact: true }).click();
   held!();
-  await expect(page.locator(".run-status")).toContainText("Cancelled");
+  await expect(page.getByTestId("run-status")).toContainText("Cancelled");
 
   await expect(
     page.getByRole("heading", { name: "Your cart is empty" }),
@@ -277,7 +277,7 @@ test("stale proposal cannot overwrite a newer revision", async ({ page }) => {
   }, key);
 
   release();
-  await expect(page.locator(".run-status")).toContainText("Failed");
+  await expect(page.getByTestId("run-status")).toContainText("Failed");
 
   await expect(
     page.getByRole("heading", { name: "Your cart is empty" }),
@@ -312,7 +312,7 @@ test("corrupt data requires an explicit reset", async ({ page }) => {
   await page.evaluate((key) => localStorage.setItem(key, "{broken"), key);
   await page.reload();
 
-  await expect(page.getByRole("alert")).toContainText(
+  await expect(page.getByTestId("workspace-error")).toContainText(
     "Unable to load saved data",
   );
 
@@ -371,4 +371,50 @@ test("desktop proportions, mobile layout and plain-text rendering", async ({
 
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await expect(page.getByLabel("Agent identity")).toBeVisible();
+});
+
+test("Next navigation preserves the active request and one WebSocket connection", async ({
+  page,
+}) => {
+  let connections = 0;
+
+  let release: (() => void) | undefined;
+
+  await page.routeWebSocket("**/ws", (ws) => {
+    connections++;
+
+    const server = ws.connectToServer();
+
+    server.onMessage((message) => {
+      if (JSON.parse(String(message)).type === "cart.proposed")
+        release = () => ws.send(message);
+      else ws.send(message);
+    });
+  });
+
+  const response = await page.goto("/");
+  const policy = response!.headers()["content-security-policy"];
+
+  expect(policy).toContain("script-src 'self' 'nonce-");
+  if (process.env.E2E_DEV !== "1")
+    expect(policy).not.toContain("'unsafe-inline'");
+
+  await send(page, "Add the Arc Desk Lamp");
+  await expect.poll(() => !!release).toBe(true);
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+
+  await expect(
+    page.getByRole("button", { name: "Save identity" }),
+  ).toBeDisabled();
+
+  await page.getByRole("link", { name: "Assistant", exact: true }).click();
+
+  await expect(
+    page.getByRole("button", { name: "Stop", exact: true }),
+  ).toBeVisible();
+
+  release!();
+  await completed(page);
+  await expect(page.getByTestId("cart-total")).toContainText("$39.00");
+  expect(connections).toBe(1);
 });

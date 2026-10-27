@@ -1,9 +1,10 @@
+import * as styles from "../../styles.css";
 import type { PersistedState } from "@shop/shared/contracts";
 import { cartTotal } from "@shop/shared/domain";
 import { formatMoney } from "@shop/shared/money";
-import { client } from "../../workspace";
-import { Icon } from "../../ui/icon";
-import { ProductTile } from "../../ui/product-tile";
+import { useWorkspaceClient } from "../../workspace";
+import { Icon } from "../ui/icon";
+import { ProductTile } from "../ui/product-tile";
 import { text } from "../../ui/text";
 
 export function Cart({
@@ -17,22 +18,28 @@ export function Cart({
   act: (operation: () => Promise<unknown>) => void;
   pending: boolean;
 }) {
+  const client = useWorkspaceClient();
   const count = state.cart.items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <section className="panel cart-panel" aria-label="Cart">
-      <div className="compact-heading">
-        <div className="heading-label">
+    <section
+      className={`${styles.panel} ${styles.cartPanel}`}
+      aria-label="Cart"
+    >
+      <div className={styles.compactHeading}>
+        <div className={styles.headingLabel}>
           <Icon name="bag" />
           <h2>{text.cart}</h2>
-          <span className="count">{count}</span>
+          <span className={styles.count}>{count}</span>
         </div>
-        <span className="muted small">{state.settings.currency}</span>
+        <span className={`${styles.muted} ${styles.small}`}>
+          {state.settings.currency}
+        </span>
       </div>
-      <div className="cart-scroll">
+      <div className={styles.cartScroll}>
         {state.cart.items.length === 0 ? (
-          <div className="empty-cart">
-            <div className="empty-illustration">
+          <div className={styles.emptyCart}>
+            <div className={styles.emptyIllustration}>
               <Icon name="bag" size={38} />
             </div>
             <h3>{text.emptyCart}</h3>
@@ -45,18 +52,18 @@ export function Cart({
             )!;
 
             return (
-              <article key={item.productId} className="cart-item">
+              <article key={item.productId} className={styles.cartItem}>
                 <ProductTile product={product} />
-                <div className="cart-item-main">
-                  <span className="eyebrow">
+                <div className={styles.cartItemMain}>
+                  <span className={styles.eyebrow}>
                     {product.category || "PRODUCT"}
                   </span>
                   <h3>{product.name}</h3>
-                  <span className="small muted">
+                  <span className={`${styles.small} ${styles.muted}`}>
                     {formatMoney(product.priceMinor)} each
                   </span>
-                  <div className="quantity-row">
-                    <div className="stepper">
+                  <div className={styles.quantityRow}>
+                    <div className={styles.stepper}>
                       <button
                         disabled={disabled}
                         aria-label={`Decrease ${product.name} quantity`}
@@ -125,7 +132,7 @@ export function Cart({
                       </button>
                     </div>
                     <button
-                      className="text-button"
+                      className={styles.textButton}
                       disabled={disabled}
                       onClick={() =>
                         act(() => client.store.setQuantity(product.id, 0))
@@ -135,7 +142,7 @@ export function Cart({
                     </button>
                   </div>
                 </div>
-                <strong className="line-price">
+                <strong className={styles.linePrice}>
                   {formatMoney(product.priceMinor * item.quantity)}
                 </strong>
               </article>
@@ -143,12 +150,12 @@ export function Cart({
           })
         )}
         {pending && (
-          <p className="pending" role="status">
+          <p className={styles.pending} role="status">
             {text.pending}
           </p>
         )}
       </div>
-      <div className="cart-total">
+      <div data-testid="cart-total" className={styles.cartTotal}>
         <span>
           {text.total}
           <small>

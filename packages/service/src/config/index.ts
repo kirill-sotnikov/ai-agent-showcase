@@ -6,7 +6,7 @@ const envSchema = z
       .enum(["development", "test", "production"])
       .default("development"),
     HOST: z.string().min(1).default("127.0.0.1"),
-    PORT: z.coerce.number().int().min(0).max(65535).default(3000),
+    PORT: z.coerce.number().int().min(0).max(65535).default(3001),
     LLM_PROVIDER: z.enum(["openai", "fake"]).default("openai"),
     OPENAI_API_KEY: z.string().optional(),
     OPENAI_MODEL: z.string().optional(),
@@ -33,7 +33,9 @@ const envSchema = z
 
 export type Config = z.infer<typeof envSchema>;
 
-export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
+export function readConfig(
+  env: Record<string, string | undefined> = process.env,
+): Config {
   return envSchema.parse(env);
 }
 

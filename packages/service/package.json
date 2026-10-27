@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --format=esm --external:fastify --external:openai '--external:openai/*' --external:ws --external:@fastify/websocket --external:zod --outfile=dist/index.mjs",
-    "dev": "yarn build --watch=forever"
+    "dev": "node --watch --env-file-if-exists=../../.env --import tsx src/index.ts",
+    "start": "node --env-file-if-exists=../../.env dist/index.mjs"
   },
   "dependencies": {
     "@fastify/websocket": "11.3.4",

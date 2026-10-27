@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import {
@@ -483,55 +481,13 @@ export function createServer(
     );
   });
 
-  const webRoot = path.resolve("packages/web/dist");
-
   server.addHook("onSend", (_request, reply, _payload, done) => {
     reply
       .header("X-Content-Type-Options", "nosniff")
-      .header("Referrer-Policy", "same-origin")
-      .header(
-        "Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
-      );
+      .header("Referrer-Policy", "same-origin");
 
     done();
   });
-
-  server.get("/assets/:name", async (request, reply) => {
-    const name = (request.params as { name: string }).name;
-
-    if (!/^[a-zA-Z0-9_.-]+\.(?:js|css|map)$/.test(name))
-      return reply.code(404).send();
-
-    try {
-      return reply
-        .type(
-          name.endsWith(".css")
-            ? "text/css"
-            : name.endsWith(".map")
-              ? "application/json"
-              : "text/javascript",
-        )
-        .send(await readFile(path.join(webRoot, "assets", name)));
-    } catch {
-      return reply
-        .code(404)
-        .send({ error: "Asset not found. Run yarn build first." });
-    }
-  });
-
-  for (const route of ["/", "/settings"])
-    server.get(route, async (_request, reply) => {
-      try {
-        return reply
-          .type("text/html")
-          .send(await readFile(path.join(webRoot, "index.html")));
-      } catch {
-        return reply
-          .code(503)
-          .send({ error: "Client is not built. Run yarn build first." });
-      }
-    });
 
   return server;
 }

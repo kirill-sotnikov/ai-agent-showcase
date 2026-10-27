@@ -1,3 +1,4 @@
+import * as styles from "../../styles.css";
 import { useState } from "react";
 import { productSchema, type Product } from "@shop/shared/contracts";
 import { text } from "../../ui/text";
@@ -17,7 +18,7 @@ export function ProductForm({
 
   return (
     <form
-      className="product-form"
+      className={styles.productForm}
       onSubmit={(event) => {
         event.preventDefault();
 
@@ -63,7 +64,7 @@ export function ProductForm({
     >
       <h3>{product ? text.editProduct : text.addProduct}</h3>
       <fieldset disabled={disabled}>
-        <div className="form-grid">
+        <div className={styles.formGrid}>
           <label>
             {text.name}
             <input
@@ -85,7 +86,7 @@ export function ProductForm({
               required
             />
           </label>
-          <label className="full-width">
+          <label className={styles.fullWidth}>
             {text.description}
             <textarea
               name="description"
@@ -116,15 +117,19 @@ export function ProductForm({
           </label>
         </div>
         {error && (
-          <p role="alert" className="field-error">
+          <p role="alert" className={styles.fieldError}>
             {error}
           </p>
         )}
-        <div className="form-buttons">
-          <button type="button" className="button secondary" onClick={onCancel}>
+        <div className={styles.formButtons}>
+          <button
+            type="button"
+            className={`${styles.button} ${styles.secondary}`}
+            onClick={onCancel}
+          >
             {text.cancel}
           </button>
-          <button className="button">{text.save}</button>
+          <button className={styles.button}>{text.save}</button>
         </div>
       </fieldset>
     </form>

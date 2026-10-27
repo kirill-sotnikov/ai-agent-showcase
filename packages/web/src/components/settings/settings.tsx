@@ -1,12 +1,13 @@
+import * as styles from "../../styles.css";
 import { useState } from "react";
 import type { PersistedState, Product } from "@shop/shared/contracts";
 import { DEFAULT_IDENTITY } from "@shop/shared/defaults";
 import { formatMoney } from "@shop/shared/money";
-import { client } from "../workspace";
+import { useWorkspaceClient } from "../../workspace";
 import { Icon } from "../ui/icon";
 import { ProductTile } from "../ui/product-tile";
-import { ProductForm } from "../features/catalog/product-form";
-import { text } from "../ui/text";
+import { ProductForm } from "../catalog/product-form";
+import { text } from "../../ui/text";
 
 export function Settings({
   state,
@@ -17,25 +18,26 @@ export function Settings({
   disabled: boolean;
   act: (operation: () => Promise<unknown>) => void;
 }) {
+  const client = useWorkspaceClient();
   const [identity, setIdentity] = useState(state.settings.agentIdentity);
   const [saved, setSaved] = useState(false);
   const [editing, setEditing] = useState<Product | "new" | null>(null);
 
   return (
-    <main className="settings-page">
-      <div className="settings-title">
-        <span className="eyebrow">MAKE IT YOURS</span>
+    <main className={styles.settingsPage}>
+      <div className={styles.settingsTitle}>
+        <span className={styles.eyebrow}>MAKE IT YOURS</span>
         <h1>{text.settings}</h1>
         <p>Shape your assistant. Curate your catalog.</p>
       </div>
       {disabled && (
-        <p className="notice" role="status">
+        <p className={styles.notice} role="status">
           {navigator.locks ? text.busy : text.readOnly}
         </p>
       )}
-      <section className="settings-card identity-card">
+      <section className={`${styles.settingsCard} ${styles.identityCard}`}>
         <div>
-          <span className="section-number">01</span>
+          <span className={styles.sectionNumber}>01</span>
           <h2>{text.identityTitle}</h2>
           <p>{text.identityHelp}</p>
         </div>
@@ -65,26 +67,26 @@ export function Settings({
             }}
             rows={5}
           />
-          <div className="form-footer">
+          <div className={styles.formFooter}>
             <span>{identity.length} / 2,000 characters</span>
-            <button className="button" disabled={disabled}>
+            <button className={styles.button} disabled={disabled}>
               {saved ? text.saved : text.identitySave}
             </button>
           </div>
         </form>
       </section>
-      <section className="settings-card catalog-card">
-        <div className="catalog-header">
+      <section className={`${styles.settingsCard} ${styles.catalogCard}`}>
+        <div className={styles.catalogHeader}>
           <div>
-            <span className="section-number">02</span>
+            <span className={styles.sectionNumber}>02</span>
             <h2>
               {text.products}
-              <span className="count">{state.products.length}</span>
+              <span className={styles.count}>{state.products.length}</span>
             </h2>
             <p>{text.catalogHelp}</p>
           </div>
           <button
-            className="button"
+            className={styles.button}
             disabled={disabled || state.products.length >= 200}
             onClick={() => setEditing("new")}
           >
@@ -107,22 +109,26 @@ export function Settings({
           />
         )}
         {state.products.length === 0 ? (
-          <div className="settings-empty">
+          <div className={styles.settingsEmpty}>
             <h3>{text.noProducts}</h3>
             <p>{text.noProductsHelp}</p>
           </div>
         ) : (
-          <div className="catalog-list">
+          <div className={styles.catalogList}>
             {state.products.map((product) => (
-              <article className="catalog-item" key={product.id}>
+              <article
+                data-testid="catalog-item"
+                className={styles.catalogItem}
+                key={product.id}
+              >
                 <ProductTile product={product} />
-                <div className="catalog-item-info">
-                  <span className="eyebrow">
+                <div className={styles.catalogItemInfo}>
+                  <span className={styles.eyebrow}>
                     {product.category || "PRODUCT"}
                   </span>
                   <h3>{product.name}</h3>
                   <p>{product.description}</p>
-                  <div className="attribute-tags">
+                  <div className={styles.attributeTags}>
                     {Object.entries(product.attributes).map(([key, value]) => (
                       <span key={key}>
                         {key}: {value}
@@ -131,16 +137,16 @@ export function Settings({
                   </div>
                 </div>
                 <strong>{formatMoney(product.priceMinor)}</strong>
-                <div className="catalog-actions">
+                <div className={styles.catalogActions}>
                   <button
-                    className="text-button"
+                    className={styles.textButton}
                     disabled={disabled}
                     onClick={() => setEditing(product)}
                   >
                     {text.edit}
                   </button>
                   <button
-                    className="text-button danger"
+                    className={`${styles.textButton} ${styles.danger}`}
                     disabled={disabled}
                     onClick={() => {
                       if (
@@ -163,10 +169,10 @@ export function Settings({
           </div>
         )}
       </section>
-      <footer className="settings-footer">
+      <footer className={styles.settingsFooter}>
         Your workspace lives in this browser. No account, database, or checkout.
         <button
-          className="text-button danger"
+          className={`${styles.textButton} ${styles.danger}`}
           disabled={disabled}
           onClick={() => {
             if (confirm(text.resetConfirm)) void client.reset();

@@ -18,9 +18,19 @@ try {
         process.exitCode = 1;
       });
     });
-} catch {
+} catch (error) {
+  const code =
+    error !== null &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof error.code === "string"
+      ? error.code
+      : "STARTUP_ERROR";
+
   console.error(
-    "Unable to start the server. Check the server environment configuration and port.",
+    code === "EADDRINUSE"
+      ? "Unable to start the service (EADDRINUSE): the port is already in use. Check PORT in .env; Fastify defaults to 3001 and Next.js to 3000."
+      : `Unable to start the service (${code}). Check the server environment configuration and port.`,
   );
 
   process.exitCode = 1;

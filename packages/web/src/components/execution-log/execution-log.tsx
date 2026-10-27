@@ -1,6 +1,7 @@
+import * as styles from "../../styles.css";
 import { useEffect, useRef } from "react";
 import type { PersistedState, ServerEvent } from "@shop/shared/contracts";
-import { Icon } from "../../ui/icon";
+import { Icon } from "../ui/icon";
 import { statuses, text } from "../../ui/text";
 
 export function ExecutionLog({ state }: { state: PersistedState }) {
@@ -20,21 +21,24 @@ export function ExecutionLog({ state }: { state: PersistedState }) {
   }, [state.executionHistory.length]);
 
   return (
-    <section className="panel log-panel" aria-label="Execution logs">
-      <div className="compact-heading">
-        <div className="heading-label">
+    <section
+      className={`${styles.panel} ${styles.logPanel}`}
+      aria-label="Execution logs"
+    >
+      <div className={styles.compactHeading}>
+        <div className={styles.headingLabel}>
           <Icon name="activity" />
           <h2>{text.logs}</h2>
         </div>
-        <span className="live-badge">
-          <span className="dot online" />
+        <span className={styles.liveBadge}>
+          <span className={`${styles.dot} ${styles.online}`} />
           LIVE WORKFLOW
         </span>
       </div>
-      <div className="log-scroll">
+      <div className={styles.logScroll}>
         {groups.size === 0 ? (
-          <div className="empty-logs">
-            <div className="log-decoration">
+          <div className={styles.emptyLogs}>
+            <div className={styles.logDecoration}>
               <span />
               <span />
               <span />
@@ -44,8 +48,8 @@ export function ExecutionLog({ state }: { state: PersistedState }) {
           </div>
         ) : (
           [...groups].map(([requestId, events]) => (
-            <div className="log-group" key={requestId}>
-              <div className="log-group-title">
+            <div className={styles.logGroup} key={requestId}>
+              <div className={styles.logGroupTitle}>
                 <span>REQUEST {requestId.slice(0, 8).toUpperCase()}</span>
                 <time>
                   {new Date(events[0].timestamp).toLocaleTimeString("en-US", {
@@ -83,15 +87,17 @@ export function ExecutionLog({ state }: { state: PersistedState }) {
 
                   return (
                     <details
-                      className={`log-entry ${failed ? "failed" : ""}`}
+                      className={`${styles.logEntry} ${failed ? styles.failed : ""}`}
                       key={event.eventId}
                     >
                       <summary>
-                        <span className={`log-dot ${running ? "running" : ""}`}>
+                        <span
+                          className={`${styles.logDot} ${running ? styles.running : ""}`}
+                        >
                           {running ? "·" : failed ? "!" : "✓"}
                         </span>
                         <span>{label}</span>
-                        <span className="log-status">
+                        <span className={styles.logStatus}>
                           {"durationMs" in payload
                             ? `${Math.round(payload.durationMs ?? 0)} ms`
                             : "outcome" in payload
@@ -101,7 +107,7 @@ export function ExecutionLog({ state }: { state: PersistedState }) {
                                 : "Completed"}
                         </span>
                       </summary>
-                      <div className="log-details">
+                      <div className={styles.logDetails}>
                         <span>
                           Event {event.sequence} ·{" "}
                           {new Date(event.timestamp).toLocaleTimeString(

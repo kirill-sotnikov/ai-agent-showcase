@@ -1,3 +1,4 @@
+import * as styles from "../../styles.css";
 import type { Product } from "@shop/shared/contracts";
 import { Icon } from "./icon";
 
@@ -6,7 +7,7 @@ export function ProductTile({ product }: { product: Product }) {
 
   return (
     <div
-      className={`product-tile ${category.includes("light") ? "sage" : category.includes("audio") ? "lavender" : "sand"}`}
+      className={`${styles.productTile} ${category.includes("light") ? styles.sage : category.includes("audio") ? styles.lavender : styles.sand}`}
       aria-hidden="true"
     >
       {category.includes("light") ? (

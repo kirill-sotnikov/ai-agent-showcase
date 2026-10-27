@@ -1,8 +1,9 @@
+import * as styles from "../../styles.css";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import type { PersistedState } from "@shop/shared/contracts";
-import { client } from "../../workspace";
-import { Icon } from "../../ui/icon";
+import { useWorkspaceClient } from "../../workspace";
+import { Icon } from "../ui/icon";
 import { statuses, text } from "../../ui/text";
 
 export function Chat({
@@ -18,6 +19,7 @@ export function Chat({
   connection: string;
   partial: string;
 }) {
+  const client = useWorkspaceClient();
   const [draft, setDraft] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
 
@@ -33,19 +35,19 @@ export function Chat({
   return (
     <>
       <div
-        className="conversation"
+        className={styles.conversation}
         aria-live="polite"
         aria-relevant="additions text"
       >
         {state.messages.length === 0 ? (
-          <div className="welcome">
-            <div className="welcome-icon">
+          <div className={styles.welcome}>
+            <div className={styles.welcomeIcon}>
               <Icon name="spark" size={33} />
             </div>
-            <span className="eyebrow">A THOUGHTFUL WAY TO SHOP</span>
+            <span className={styles.eyebrow}>A THOUGHTFUL WAY TO SHOP</span>
             <h2>{text.welcome}</h2>
             <p>{text.welcomeBody}</p>
-            <div className="suggestions">
+            <div className={styles.suggestions}>
               {text.examples.map((example, index) => (
                 <button key={example} onClick={() => setDraft(example)}>
                   <span>
@@ -62,10 +64,14 @@ export function Chat({
             </div>
           </div>
         ) : (
-          <div className="messages">
+          <div className={styles.messages}>
             {state.messages.map((message) => (
-              <article key={message.id} className={`message ${message.role}`}>
-                <span className="message-avatar">
+              <article
+                data-message-role={message.role}
+                key={message.id}
+                className={`${styles.message} ${styles[message.role]}`}
+              >
+                <span className={styles.messageAvatar}>
                   {message.role === "assistant" ? (
                     <Icon name="spark" size={17} />
                   ) : (
@@ -73,7 +79,7 @@ export function Chat({
                   )}
                 </span>
                 <div>
-                  <div className="message-meta">
+                  <div className={styles.messageMeta}>
                     {message.role === "assistant" ? "Assistant" : "You"}
                     <time>
                       {new Date(message.timestamp).toLocaleTimeString("en-US", {
@@ -90,8 +96,8 @@ export function Chat({
           </div>
         )}
         {partial && (
-          <article className="message assistant">
-            <span className="message-avatar">
+          <article className={`${styles.message} ${styles.assistant}`}>
+            <span className={styles.messageAvatar}>
               <Icon name="spark" size={17} />
             </span>
             <p>
@@ -102,14 +108,24 @@ export function Chat({
         )}
         <div ref={bottom} />
       </div>
-      <div className="composer-area">
-        <div className="run-status" role="status">
+      <div className={styles.composerArea}>
+        <div
+          data-testid="run-status"
+          className={styles.runStatus}
+          role="status"
+        >
           {state.activeRun ? (
             <>
-              <span className={busy ? "pulse dot online" : "dot"} />
+              <span
+                className={
+                  busy
+                    ? `${styles.pulse} ${styles.dot} ${styles.online}`
+                    : styles.dot
+                }
+              />
               {statuses[state.activeRun.stage]}
               {state.activeRun.cartStatus === "committed" && (
-                <span className="saved-tag">Cart saved</span>
+                <span className={styles.savedTag}>Cart saved</span>
               )}
             </>
           ) : (
@@ -117,12 +133,12 @@ export function Chat({
           )}
         </div>
         <form
-          className="composer"
+          className={styles.composer}
           onSubmit={(event) => {
             void submit(event);
           }}
         >
-          <label className="sr-only" htmlFor="message">
+          <label className={styles.srOnly} htmlFor="message">
             Message
           </label>
           <textarea
@@ -147,7 +163,7 @@ export function Chat({
             <button
               type="button"
               aria-label={text.stop}
-              className="button stop"
+              className={`${styles.button} ${styles.stop}`}
               onClick={() => client.stop()}
             >
               {text.stop}
@@ -155,7 +171,7 @@ export function Chat({
             </button>
           ) : (
             <button
-              className="button"
+              className={styles.button}
               disabled={
                 !ready ||
                 connection !== "Connected" ||
@@ -168,7 +184,7 @@ export function Chat({
             </button>
           )}
         </form>
-        <p className="input-hint">
+        <p className={styles.inputHint}>
           Enter to send <span>·</span> Shift + Enter for a new line
         </p>
       </div>

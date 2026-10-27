@@ -1,3 +1,4 @@
+import { createStore } from "zustand/vanilla";
 import {
   LIMITS,
   serverEventSchema,
@@ -26,7 +27,7 @@ export interface ViewState {
   partial: string;
 }
 export class WorkspaceClient {
-  private view: ViewState = {
+  readonly state = createStore<ViewState>(() => ({
     workspace: null,
     connection: "Connecting",
     ready: false,
@@ -35,12 +36,15 @@ export class WorkspaceClient {
     loadError: false,
     pending: null,
     partial: "",
-  };
+  }));
 
-  private listeners = new Set<() => void>();
+  private lifecycle = 0;
 
   readonly store = new WorkspaceStore(
-    window.localStorage,
+    {
+      getItem: (key) => window.localStorage.getItem(key),
+      setItem: (key, value) => window.localStorage.setItem(key, value),
+    },
     browserLocks(),
     (workspace) => this.update({ workspace }),
   );
@@ -65,19 +69,12 @@ export class WorkspaceClient {
     chunk: number;
   } | null = null;
 
-  getSnapshot = () => this.view;
-
-  subscribe = (listener: () => void) => {
-    this.listeners.add(listener);
-
-    return () => {
-      this.listeners.delete(listener);
-    };
-  };
+  private get view() {
+    return this.state.getState();
+  }
 
   private update(patch: Partial<ViewState>) {
-    this.view = { ...this.view, ...patch };
-    for (const listener of this.listeners) listener();
+    this.state.setState(patch);
   }
 
   report(error: unknown) {
@@ -103,12 +100,14 @@ export class WorkspaceClient {
   };
 
   async initialize() {
+    const lifecycle = ++this.lifecycle;
+
     this.stopped = false;
     window.addEventListener("storage", this.onStorage);
 
     try {
       await this.store.initialize();
-      this.connect();
+      if (lifecycle === this.lifecycle && !this.stopped) this.connect();
     } catch (error) {
       this.report(error);
       this.update({ loadError: true, connection: "Disconnected" });
@@ -126,6 +125,7 @@ export class WorkspaceClient {
   }
 
   dispose() {
+    ++this.lifecycle;
     this.stopped = true;
     ++this.generation;
     clearTimeout(this.reconnectTimer);
@@ -145,6 +145,9 @@ export class WorkspaceClient {
     if (this.stopped) return;
 
     const generation = ++this.generation;
+
+    clearTimeout(this.reconnectTimer);
+    this.socket?.close();
 
     this.update({ connection: "Connecting", ready: false });
 

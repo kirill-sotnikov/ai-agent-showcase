@@ -11,11 +11,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "yarn build && yarn dev:watch",
-    "dev:watch": "yarn workspace @shop/web dev & yarn workspace @shop/server dev & NODE_ENV=development node --watch --env-file-if-exists=.env packages/service/dist/index.mjs",
+    "dev": "yarn dev:web & yarn dev:service",
     "build": "yarn workspace @shop/web build && yarn workspace @shop/server build",
-    "start": "node --env-file-if-exists=.env packages/service/dist/index.mjs",
-    "typecheck": "tsc --noEmit",
+    "start": "yarn start:web & yarn start:service",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p packages/web/tsconfig.json",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -26,7 +25,11 @@
     "eval:fake": "node --import tsx tests/evals/run-evals.ts",
     "eval:live": "node --env-file-if-exists=.env --import tsx tests/evals/run-evals.ts --live",
     "check": "yarn typecheck && yarn lint && yarn test && yarn build",
-    "dev:fake": "LLM_PROVIDER=fake yarn dev"
+    "dev:fake": "LLM_PROVIDER=fake yarn dev",
+    "dev:service": "yarn workspace @shop/server dev",
+    "start:service": "yarn workspace @shop/server start",
+    "dev:web": "NODE_ENV=development PORT=${WEB_PORT:-3000} yarn workspace @shop/web dev",
+    "start:web": "NODE_ENV=production PORT=${WEB_PORT:-3000} yarn workspace @shop/web start"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",

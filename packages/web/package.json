@@ -4,13 +4,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bundle": "esbuild src/main.tsx --bundle --format=esm --outdir=dist/assets --sourcemap --target=es2022",
-    "build": "yarn bundle --minify --define:process.env.NODE_ENV=\\\"${NODE_ENV:-production}\\\" && cp index.html dist/index.html",
-    "dev": "yarn bundle --watch=forever --define:process.env.NODE_ENV=\\\"development\\\""
+    "dev": "next dev --webpack --hostname 127.0.0.1",
+    "build": "next build --webpack",
+    "start": "next start --hostname 127.0.0.1"
   },
   "dependencies": {
     "@shop/shared": "workspace:*",
+    "@vanilla-extract/css": "^1.21.3",
+    "next": "^16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@vanilla-extract/next-plugin": "^2.5.2"
   }
 }
