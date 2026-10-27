@@ -3,7 +3,10 @@ import Fastify from "fastify";
 import OpenAI from "openai";
 import type { AddressInfo } from "node:net";
 import { seedProducts } from "@shop/shared/defaults";
+import { serverEventSchema, type ServerEvent } from "@shop/shared/contracts";
 import { OpenAIProvider } from "../../packages/service/src/ai/llm/openai.js";
+import { FakeProvider } from "../../packages/service/src/ai/llm/fake.js";
+import type { Provider } from "../../packages/service/src/ai/llm/types.js";
 import { runWorkflow } from "../../packages/service/src/ai/orchestrator/workflow.js";
 import { readConfig } from "../../packages/service/src/config/index.js";
 import {
@@ -240,6 +243,179 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
     calls: 7,
     inputTokens: 350,
     outputTokens: 140,
+  });
+});
+
+it("sends prior turns and the current cart to every agent and commits a follow-up despite an uncertain guard", async () => {
+  const store = new WorkspaceStore(new MemoryStorage(), new TestLocks());
+
+  await store.initialize();
+  await store.setQuantity(seedProducts[0].id, 3);
+
+  async function turn(message: string, provider: Provider) {
+    const requestId = crypto.randomUUID();
+    const payload = await store.begin(requestId, message);
+    const writes: Promise<unknown>[] = [];
+    const events: ServerEvent[] = [];
+
+    let sequence = 0;
+
+    await runWorkflow(payload, provider, {
+      requestId,
+      maxToolCalls: 12,
+      signal: new AbortController().signal,
+      commit: (proposal) => store.commit(requestId, proposal),
+      emit: (type, event) => {
+        const parsed = serverEventSchema.parse({
+          protocolVersion: 1,
+          requestId,
+          eventId: crypto.randomUUID(),
+          sequence: ++sequence,
+          timestamp: new Date().toISOString(),
+          type,
+          payload: event,
+        });
+
+        events.push(parsed);
+        writes.push(store.record(parsed));
+      },
+    });
+
+    await Promise.all(writes);
+
+    return events;
+  }
+
+  await turn("Add Blue Ceramic Mug to cart", new FakeProvider());
+
+  const priorMessages = store.read()!.messages;
+
+  expect(priorMessages.map((message) => message.role)).toEqual([
+    "user",
+    "assistant",
+  ]);
+
+  expect(priorMessages[1].content).toContain("Blue Ceramic Mug");
+
+  const server = Fastify();
+
+  servers.push(server);
+
+  const contexts: unknown[] = [];
+
+  const result = {
+    productIds: [seedProducts[2].id],
+    clarification: null,
+    missingInformation: false,
+  };
+
+  const presentation = {
+    intro: "Here is your saved cart.",
+    productIds: result.productIds,
+    missingInformation: false,
+  };
+
+  const toolCalls = [
+    { name: "get_product", arguments: { productId: seedProducts[2].id } },
+    {
+      name: "add_to_cart",
+      arguments: { productId: seedProducts[2].id, quantity: 1 },
+    },
+  ];
+
+  let toolRound = 0;
+
+  server.post("/responses", async (request, reply) => {
+    const body = request.body as {
+      model: string;
+      stream?: boolean;
+      text: { format: { name: string } };
+      input: string | { role: string; content: string }[];
+    };
+
+    const name = body.text.format.name;
+
+    if (name !== "presentation")
+      contexts.push(
+        JSON.parse(
+          typeof body.input === "string" ? body.input : body.input[0].content,
+        ),
+      );
+
+    const output = response(
+      name === "guard"
+        ? { verdict: "UNCERTAIN" }
+        : name === "route"
+          ? { intent: "COMMAND", confidence: 1, clarification: null }
+          : name === "presentation"
+            ? presentation
+            : result,
+      body.model,
+      name === "agent_result" ? toolCalls[toolRound++] : undefined,
+    );
+
+    if (body.stream)
+      return reply
+        .type("text/event-stream")
+        .send(
+          `event: response.output_text.delta\ndata: ${JSON.stringify({ type: "response.output_text.delta", delta: JSON.stringify(presentation) })}\n\nevent: response.completed\ndata: ${JSON.stringify({ type: "response.completed", response: output })}\n\n`,
+        );
+
+    return output;
+  });
+
+  await server.listen({ host: "127.0.0.1", port: 0 });
+
+  const address = server.server.address() as AddressInfo;
+
+  const events = await turn(
+    "add one more",
+    new OpenAIProvider(
+      readConfig({
+        OPENAI_API_KEY: "test-secret",
+        OPENAI_MODEL: "configured-test-model",
+      }),
+      () => {},
+      new OpenAI({
+        apiKey: "test-secret",
+        baseURL: `http://127.0.0.1:${address.port}`,
+        maxRetries: 0,
+      }),
+    ),
+  );
+
+  // Guard, Router and all three Action calls receive the same prior conversation.
+  expect(contexts).toHaveLength(5);
+
+  for (const context of contexts)
+    expect(context).toMatchObject({
+      currentMessage: "add one more",
+      baseRevision: 2,
+      conversation: priorMessages,
+      cart: {
+        items: [
+          {
+            productId: seedProducts[0].id,
+            name: seedProducts[0].name,
+            quantity: 3,
+          },
+          {
+            productId: seedProducts[2].id,
+            name: seedProducts[2].name,
+            quantity: 1,
+          },
+        ],
+      },
+    });
+
+  expect(store.read()!.cart.items).toEqual([
+    { productId: seedProducts[0].id, quantity: 3 },
+    { productId: seedProducts[2].id, quantity: 2 },
+  ]);
+
+  expect(events.at(-1)).toMatchObject({
+    type: "request.completed",
+    payload: { outcome: "completed", cartStatus: "committed" },
   });
 });
 

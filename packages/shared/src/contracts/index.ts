@@ -238,6 +238,7 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
 ]);
 
 const detailsSchema = z.strictObject({
+  guardVerdict: z.enum(["VALID", "SPAM", "UNCERTAIN"]).optional(),
   tool: toolNameSchema.optional(),
   productIds: z.array(idSchema).max(200).optional(),
   query: z.string().max(200).optional(),

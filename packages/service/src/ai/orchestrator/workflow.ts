@@ -12,6 +12,7 @@ import {
   type EventType,
   type Proposal,
   type RunStage,
+  type SafeDetails,
   type Snapshot,
   type StartPayload,
   type WorkflowAgent,
@@ -107,6 +108,7 @@ export async function runWorkflow(
   let agent: WorkflowAgent = "orchestrator";
   let receipt: CommitReceipt | null = null;
   let stepStarted = performance.now();
+  let stepDetails: SafeDetails | undefined;
 
   const move = (
     next: RunStage,
@@ -122,11 +124,13 @@ export async function runWorkflow(
       agent,
       label: labels[stage] ?? "Request received",
       durationMs: performance.now() - stepStarted,
+      ...(stepDetails ? { details: stepDetails } : {}),
     });
 
     stage = next;
     agent = nextAgent;
     stepStarted = performance.now();
+    stepDetails = undefined;
     emit("step.started", { stage, agent, label });
   };
 
@@ -166,7 +170,13 @@ export async function runWorkflow(
       await abortable(provider.guard(context, signal), signal),
     );
 
-    if (guard.verdict !== "VALID") {
+    stepDetails = { guardVerdict: guard.verdict };
+
+    // Uncertainty about a short follow-up belongs to routing, where references
+    // can be resolved and a focused clarification can be requested if needed.
+    if (guard.verdict === "SPAM") {
+      move("responding", "Preparing response", "guard");
+
       clarify(
         "What would you like to know about the products or change in your cart?",
         [],
@@ -323,7 +333,9 @@ export async function runWorkflow(
           ? `${presentation.intro === "Here is your saved cart." ? "Here is what the catalog says." : presentation.intro}\n\n${facts}`
           : "No matching products were found in your catalog.";
 
-      if (result.missingInformation || presentation.missingInformation)
+      // The execution agent checks the requested information against retrieved
+      // catalog data. Composition must not introduce a new missing-data claim.
+      if (result.missingInformation)
         content +=
           "\n\nThe catalog does not include further specifications for that question.";
     } catch (error) {

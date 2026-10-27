@@ -68,3 +68,25 @@ it("writes terminal failures to Pino with a stable code and elapsed duration", (
     "private upstream",
   );
 });
+
+it("records the guard verdict without logging conversation contents", () => {
+  const logger = { info: vi.fn(), warn: vi.fn() };
+
+  logExecution(
+    logger as unknown as FastifyBaseLogger,
+    crypto.randomUUID(),
+    "step.completed",
+    {
+      stage: "checking",
+      agent: "guard",
+      label: "Checking request",
+      details: { guardVerdict: "UNCERTAIN" },
+    },
+    100,
+  );
+
+  expect(logger.info.mock.calls[0][0]).toMatchObject({
+    agent: "guard",
+    guardVerdict: "UNCERTAIN",
+  });
+});

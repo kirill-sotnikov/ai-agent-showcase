@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type {
   EventPayload,
   EventType,
@@ -128,6 +128,152 @@ describe("controlled workflow", () => {
     expect(result.events.at(-1)).toMatchObject({
       type: "request.completed",
       payload: { outcome: "clarification" },
+    });
+  });
+
+  it("does not let composition add a missing-specifications notice to a fulfilled cheapest-product request", async () => {
+    class NoisyComposer extends FakeProvider {
+      override async present(...args: Parameters<FakeProvider["present"]>) {
+        return { ...(await super.present(...args)), missingInformation: true };
+      }
+    }
+
+    const result = await execute(
+      "find cheapest product in whole catalog and add to cart",
+      new NoisyComposer(),
+    );
+
+    expect(result.proposals[0].nextCart.items).toEqual([
+      { productId: seedProducts[2].id, quantity: 1 },
+    ]);
+
+    const message = result.events.find(
+      (event) => event.type === "assistant.message",
+    )?.payload;
+
+    expect(message).toMatchObject({
+      content: expect.stringContaining("Cart saved."),
+    });
+
+    expect(message).toMatchObject({
+      content: expect.stringContaining("Blue Ceramic Mug"),
+    });
+
+    expect(message).toMatchObject({
+      content: expect.not.stringContaining(
+        "The catalog does not include further specifications",
+      ),
+    });
+
+    expect(result.events.at(-1)).toMatchObject({
+      type: "request.completed",
+      payload: { outcome: "completed", cartStatus: "committed" },
+    });
+  });
+
+  it.each([
+    ["Are the headphones waterproof?", "unchanged"],
+    ["Add the blue mug and tell me its weight", "committed"],
+  ])(
+    "preserves the missing-information notice for %s",
+    async (message, cartStatus) => {
+      class OptimisticComposer extends FakeProvider {
+        override async present(...args: Parameters<FakeProvider["present"]>) {
+          return {
+            ...(await super.present(...args)),
+            missingInformation: false,
+          };
+        }
+      }
+
+      const result = await execute(message, new OptimisticComposer());
+
+      expect(result.events).toContainEqual({
+        type: "assistant.message",
+        payload: expect.objectContaining({
+          content: expect.stringContaining(
+            "The catalog does not include further specifications for that question.",
+          ),
+        }),
+      });
+
+      expect(result.events.at(-1)).toMatchObject({
+        type: "request.completed",
+        payload: { outcome: "completed", cartStatus },
+      });
+    },
+  );
+
+  it("lets the router handle an uncertain guard verdict", async () => {
+    const provider: Provider = new FakeProvider();
+
+    provider.guard = async () => ({ verdict: "UNCERTAIN" });
+
+    const result = await execute("Add the Blue Ceramic Mug", provider);
+
+    expect(result.proposals[0].nextCart.items).toEqual([
+      { productId: seedProducts[2].id, quantity: 1 },
+    ]);
+
+    expect(result.events).toContainEqual({
+      type: "step.completed",
+      payload: expect.objectContaining({
+        stage: "checking",
+        agent: "guard",
+        details: { guardVerdict: "UNCERTAIN" },
+      }),
+    });
+  });
+
+  it("keeps unresolved references read-only after an uncertain guard verdict", async () => {
+    const provider: Provider = new FakeProvider();
+
+    provider.guard = async () => ({ verdict: "UNCERTAIN" });
+
+    provider.route = async () => ({
+      intent: "CLARIFICATION",
+      confidence: 1,
+      clarification: "Which product would you like one more of?",
+    });
+
+    provider.execute = vi.fn(provider.execute);
+
+    const result = await execute("add one more", provider);
+
+    expect(result.proposals).toHaveLength(0);
+    expect(provider.execute).not.toHaveBeenCalled();
+
+    expect(result.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        content: "Which product would you like one more of?",
+      }),
+    });
+  });
+
+  it("still stops spam before routing and records the guard verdict", async () => {
+    const provider: Provider = new FakeProvider();
+
+    provider.guard = async () => ({ verdict: "SPAM" });
+    provider.route = vi.fn(provider.route);
+
+    const result = await execute("spam", provider);
+
+    expect(result.proposals).toHaveLength(0);
+    expect(provider.route).not.toHaveBeenCalled();
+
+    expect(result.events).toContainEqual({
+      type: "step.completed",
+      payload: expect.objectContaining({
+        stage: "checking",
+        agent: "guard",
+        details: { guardVerdict: "SPAM" },
+      }),
+    });
+
+    expect(result.events.at(-1)).toMatchObject({
+      type: "request.completed",
+      payload: { agent: "guard", outcome: "clarification" },
     });
   });
 

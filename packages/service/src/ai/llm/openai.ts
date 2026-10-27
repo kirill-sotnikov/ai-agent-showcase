@@ -70,6 +70,14 @@ export class OpenAIProvider implements Provider {
       customIdentity: context.snapshot.settings.agentIdentity,
       conversation: context.snapshot.messages.slice(-20),
       pendingClarification: context.snapshot.pendingClarification,
+      cart: {
+        items: context.snapshot.cart.items.map((item) => ({
+          ...item,
+          name: context.snapshot.products.find(
+            (product) => product.id === item.productId,
+          )?.name,
+        })),
+      },
       productCount: context.snapshot.products.length,
     });
   }

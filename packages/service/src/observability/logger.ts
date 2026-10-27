@@ -17,6 +17,8 @@ export function logExecution<T extends EventType>(
     event: type,
     stage: "stage" in payload ? payload.stage : type,
     agent: "agent" in payload ? payload.agent : undefined,
+    guardVerdict:
+      "details" in payload ? payload.details?.guardVerdict : undefined,
     tool: "details" in payload ? payload.details?.tool : undefined,
     durationMs: "durationMs" in payload ? payload.durationMs : undefined,
     code: "error" in payload ? payload.error?.code : undefined,
