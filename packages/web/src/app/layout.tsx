@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
 import type { ReactNode } from "react";
-import { WorkspaceProvider } from "../workspace";
 import { AppShell } from "../components/app-shell";
 import "../styles.css";
+import { WorkspaceProvider } from "../workspace";
 
 export const metadata: Metadata = {
-  title: "Shopping Studio — AI Shopping Assistant",
+  title: "AI Agent",
   description:
     "Your personal shopping assistant with a local catalog and verified cart changes.",
 };

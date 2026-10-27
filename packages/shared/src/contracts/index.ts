@@ -250,14 +250,25 @@ const detailsSchema = z.strictObject({
     .optional(),
 });
 
+export const workflowAgentSchema = z.enum([
+  "orchestrator",
+  "guard",
+  "router",
+  "knowledge",
+  "action",
+  "composer",
+]);
+
 const stepSchema = z.strictObject({
   stage: runStageSchema,
+  agent: workflowAgentSchema.optional(),
   label: z.string().max(120),
   durationMs: z.number().min(0).optional(),
   details: detailsSchema.optional(),
 });
 
 const terminalSchema = z.strictObject({
+  agent: workflowAgentSchema.optional(),
   outcome: z.enum(["completed", "clarification", "failed", "cancelled"]),
   cartStatus: z.enum(["unchanged", "committed"]),
   error: publicErrorSchema.optional(),
@@ -364,6 +375,7 @@ export type Snapshot = z.infer<typeof snapshotSchema>;
 export type StartPayload = z.infer<typeof startPayloadSchema>;
 export type ActiveRun = z.infer<typeof activeRunSchema>;
 export type RunStage = z.infer<typeof runStageSchema>;
+export type WorkflowAgent = z.infer<typeof workflowAgentSchema>;
 export type PendingClarification = z.infer<typeof clarificationSchema>;
 export type CommitReceipt = z.infer<typeof receiptSchema>;
 export type Proposal = z.infer<typeof proposalSchema>;

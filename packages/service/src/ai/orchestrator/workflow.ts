@@ -14,6 +14,7 @@ import {
   type RunStage,
   type Snapshot,
   type StartPayload,
+  type WorkflowAgent,
 } from "@shop/shared/contracts";
 import {
   canonicalCart,
@@ -103,23 +104,30 @@ export async function runWorkflow(
   };
 
   let stage: RunStage = "accepted";
+  let agent: WorkflowAgent = "orchestrator";
   let receipt: CommitReceipt | null = null;
   let stepStarted = performance.now();
 
-  const move = (next: RunStage, label: string) => {
+  const move = (
+    next: RunStage,
+    label: string,
+    nextAgent: WorkflowAgent = "orchestrator",
+  ) => {
     signal.throwIfAborted();
     if (!transitions[stage]?.includes(next))
       throw new DomainError("INVALID_REQUEST", "Invalid request transition.");
 
     emit("step.completed", {
       stage,
+      agent,
       label: labels[stage] ?? "Request received",
       durationMs: performance.now() - stepStarted,
     });
 
     stage = next;
+    agent = nextAgent;
     stepStarted = performance.now();
-    emit("step.started", { stage, label });
+    emit("step.started", { stage, agent, label });
   };
 
   const message = (content: string) =>
@@ -144,6 +152,7 @@ export async function runWorkflow(
     message(question);
 
     emit("request.completed", {
+      agent,
       outcome: "clarification",
       cartStatus: "unchanged",
     });
@@ -151,7 +160,7 @@ export async function runWorkflow(
 
   try {
     emit("request.accepted", {});
-    move("checking", "Checking request");
+    move("checking", "Checking request", "guard");
 
     const guard = guardResultSchema.parse(
       await abortable(provider.guard(context, signal), signal),
@@ -166,7 +175,7 @@ export async function runWorkflow(
       return;
     }
 
-    move("routing", "Understanding intent");
+    move("routing", "Understanding intent", "router");
 
     const route = routeResultSchema.parse(
       await abortable(provider.route(context, signal), signal),
@@ -174,6 +183,7 @@ export async function runWorkflow(
 
     emit("step.completed", {
       stage,
+      agent,
       label: "Intent identified",
       details: { route: route.intent },
     });
@@ -199,6 +209,7 @@ export async function runWorkflow(
       );
 
       emit("request.completed", {
+        agent,
         outcome: "completed",
         cartStatus: "unchanged",
       });
@@ -206,9 +217,9 @@ export async function runWorkflow(
       return;
     }
 
-    move("executing", "Running shopping tools");
-
     const role = route.intent === "QUESTION" ? "knowledge" : "action";
+
+    move("executing", "Running shopping tools", role);
 
     const gateway = new ToolGateway(
       role,
@@ -218,6 +229,7 @@ export async function runWorkflow(
       (phase, details, durationMs) =>
         emit(phase === "started" ? "tool.started" : "tool.completed", {
           stage: "executing",
+          agent: role,
           label: details.tool
             ? toolLabels[details.tool]
             : "Selecting the lowest price",
@@ -270,7 +282,7 @@ export async function runWorkflow(
       emit("cart.committed", receipt);
     }
 
-    move("responding", "Preparing verified response");
+    move("responding", "Preparing verified response", "composer");
 
     let content: string;
 
@@ -320,6 +332,7 @@ export async function runWorkflow(
       message(content);
 
       emit("request.failed", {
+        agent,
         outcome: "failed",
         cartStatus: "committed",
         error: {
@@ -336,6 +349,7 @@ export async function runWorkflow(
     move("completed", "Request completed");
 
     emit("request.completed", {
+      agent,
       outcome: "completed",
       cartStatus: receipt ? "committed" : "unchanged",
     });
@@ -355,6 +369,7 @@ export async function runWorkflow(
     const cancelled = failure.code === "CANCELLED";
 
     emit(cancelled ? "request.cancelled" : "request.failed", {
+      agent,
       outcome: cancelled ? "cancelled" : "failed",
       cartStatus: receipt ? "committed" : "unchanged",
       error: {

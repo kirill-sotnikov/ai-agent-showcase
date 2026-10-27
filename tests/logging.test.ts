@@ -12,6 +12,7 @@ it("keeps technical logs to allowed metadata without message or tool contents", 
     "tool.started",
     {
       stage: "executing",
+      agent: "knowledge",
       label: "Searching products",
       details: { tool: "search_products", query: "private product query" },
     },
@@ -31,6 +32,7 @@ it("keeps technical logs to allowed metadata without message or tool contents", 
   expect(logger.info.mock.calls[0][0]).toMatchObject({
     requestId,
     stage: "executing",
+    agent: "knowledge",
     tool: "search_products",
   });
 

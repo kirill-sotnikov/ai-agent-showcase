@@ -1,11 +1,11 @@
-import * as styles from "../../styles.css";
 import type { PersistedState } from "@shop/shared/contracts";
 import { cartTotal } from "@shop/shared/domain";
 import { formatMoney } from "@shop/shared/money";
+import * as styles from "../../styles.css";
+import { text } from "../../ui/text";
 import { useWorkspaceClient } from "../../workspace";
 import { Icon } from "../ui/icon";
 import { ProductTile } from "../ui/product-tile";
-import { text } from "../../ui/text";
 
 export function Cart({
   state,
@@ -158,9 +158,6 @@ export function Cart({
       <div data-testid="cart-total" className={styles.cartTotal}>
         <span>
           {text.total}
-          <small>
-            {count} {count === 1 ? "item" : "items"} in your cart
-          </small>
         </span>
         <strong>{formatMoney(cartTotal(state.cart, state.products))}</strong>
       </div>

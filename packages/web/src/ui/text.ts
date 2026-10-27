@@ -1,5 +1,5 @@
 export const text = {
-  brand: "Shopping Studio",
+  brand: "AI Assistance",
   subtitle: "A little help finding the right thing.",
   assistant: "Assistant",
   settings: "Settings",
@@ -16,9 +16,7 @@ export const text = {
   emptyCart: "Your cart is empty",
   emptyCartBody:
     "Good finds will show up here. Ask the assistant to add something, or explore your catalog in Settings.",
-  emptyLogs: "A window into the workflow",
-  emptyLogsBody:
-    "Send a message to follow each step, from understanding your request to saving your cart.",
+  emptyLogs: "Waiting for workflow events...",
   pending: "Pending changes",
   processing: "Processing",
   clarify: "Waiting for clarification",

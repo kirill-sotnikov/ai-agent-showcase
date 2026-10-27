@@ -21,6 +21,24 @@ test("search → cheapest commit → partial remove → reload", async ({ page }
   await send(page, "Find a lamp under $50 and add the cheapest one.");
   await completed(page);
 
+  const logs = page.getByRole("log", { name: "Workflow output" });
+
+  await expect(logs).toContainText(
+    "[agent=Guard] step.started Checking request",
+  );
+
+  await expect(logs).toContainText(
+    "[agent=Router] step.started Understanding intent",
+  );
+
+  await expect(logs).toContainText(
+    "[agent=Action] tool.started Searching products",
+  );
+
+  await expect(logs).toContainText(
+    "[agent=Composer] step.started Preparing verified response",
+  );
+
   const cart = page.getByRole("region", { name: "Cart", exact: true });
 
   await expect(
@@ -44,6 +62,10 @@ test("search → cheapest commit → partial remove → reload", async ({ page }
 
   await page.reload();
   await expect(cart.getByTestId("cart-total")).toContainText("$57.00");
+
+  await expect(logs).toContainText(
+    "[agent=Action] tool.started Searching products",
+  );
 
   await expect(
     cart.getByLabel("Blue Ceramic Mug quantity", { exact: true }),

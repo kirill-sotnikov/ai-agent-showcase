@@ -247,7 +247,24 @@ export const logPanel = style({});
 
 export const cartScroll = style({});
 
-export const logScroll = style({});
+export const logScroll = style({
+  margin: 0,
+  padding: "16px 18px",
+  background: "#1c211e",
+  color: "#dce4dc",
+  fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
+  fontSize: "12px",
+  lineHeight: 1.7,
+  whiteSpace: "pre-wrap",
+  overflowWrap: "anywhere",
+  tabSize: 2,
+  selectors: {
+    "&:focus-visible": {
+      outline: "2px solid #a4bd94",
+      outlineOffset: "-2px",
+    },
+  },
+});
 
 export const emptyCart = style({
   textAlign: "center",
@@ -265,13 +282,6 @@ export const emptyIllustration = style({
   background: "#f1f4e8",
   borderRadius: "50%",
   margin: "0 auto 12px",
-});
-
-export const emptyLogs = style({
-  maxWidth: "300px",
-  margin: "32px auto",
-  textAlign: "center",
-  padding: "0 20px",
 });
 
 export const cartTotal = style({
@@ -354,76 +364,6 @@ export const textButton = style({
 
 export const danger = style({
   color: "#ab7669",
-});
-
-export const liveBadge = style({
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-  fontSize: "7px",
-  letterSpacing: "1px",
-  color: "#9ba28d",
-});
-
-export const logDecoration = style({
-  display: "grid",
-  gap: "7px",
-  width: "60px",
-  margin: "0 auto 19px",
-});
-
-export const logGroup = style({
-  padding: "16px 22px 8px",
-});
-
-export const logGroupTitle = style({
-  display: "flex",
-  justifyContent: "space-between",
-  fontSize: "7px",
-  letterSpacing: "1px",
-  color: "#a0a98e",
-  marginBottom: "12px",
-});
-
-export const logEntry = style({
-  borderLeft: "1px solid #e2e8d8",
-  marginLeft: "7px",
-  padding: "0 0 12px 17px",
-});
-
-export const logDot = style({
-  position: "absolute",
-  left: "-25px",
-  width: "15px",
-  height: "15px",
-  display: "grid",
-  placeItems: "center",
-  borderRadius: "50%",
-  background: "#edf4e3",
-  color: "#769563",
-  border: "2px solid #fdfefa",
-  fontSize: "9px",
-});
-
-export const running = style({});
-
-export const failed = style({});
-
-export const logStatus = style({
-  fontSize: "8px",
-  color: "#9daa8c",
-  marginLeft: "auto",
-  whiteSpace: "nowrap",
-});
-
-export const logDetails = style({
-  padding: "10px",
-  background: "#f4f7ed",
-  marginTop: "8px",
-  borderRadius: "6px",
-  color: "#859778",
-  fontSize: "8px",
-  lineHeight: 1.8,
 });
 
 export const messages = style({
@@ -902,28 +842,20 @@ ${logScroll}`,
   },
 );
 
-globalStyle(
-  `${emptyCart} h3,
-${emptyLogs} h3`,
-  {
-    fontFamily: "Georgia, serif",
-    fontWeight: 400,
-    fontSize: "20px",
-    color: "#5f6c56",
-    letterSpacing: "-0.3px",
-  },
-);
+globalStyle(`${emptyCart} h3`, {
+  fontFamily: "Georgia, serif",
+  fontWeight: 400,
+  fontSize: "20px",
+  color: "#5f6c56",
+  letterSpacing: "-0.3px",
+});
 
-globalStyle(
-  `${emptyCart} p,
-${emptyLogs} p`,
-  {
-    fontSize: "10px",
-    color: "#929b87",
-    lineHeight: 1.8,
-    marginTop: "9px",
-  },
-);
+globalStyle(`${emptyCart} p`, {
+  fontSize: "10px",
+  color: "#929b87",
+  lineHeight: 1.8,
+  marginTop: "9px",
+});
 
 globalStyle(`${cartTotal} small`, {
   display: "block",
@@ -991,62 +923,6 @@ globalStyle(`${stepper} input`, {
 
 globalStyle(`${stepper} input::-webkit-inner-spin-button`, {
   appearance: "none",
-});
-
-globalStyle(`${liveBadge} ${dot}`, {
-  width: "4px",
-  height: "4px",
-});
-
-globalStyle(`${logDecoration} span`, {
-  display: "block",
-  height: "4px",
-  background: "#e4eadc",
-  borderRadius: "4px",
-});
-
-globalStyle(`${logDecoration} span:nth-child(2)`, {
-  width: "43px",
-});
-
-globalStyle(`${logDecoration} span:nth-child(3)`, {
-  width: "53px",
-});
-
-globalStyle(`${logGroupTitle} time`, {
-  letterSpacing: "0.3px",
-});
-
-globalStyle(`${logEntry} summary`, {
-  listStyle: "none",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  gap: "7px",
-  position: "relative",
-  fontSize: "10px",
-  color: "#65765a",
-  minHeight: "20px",
-});
-
-globalStyle(`${logEntry} summary::-webkit-details-marker`, {
-  display: "none",
-});
-
-globalStyle(`${logDot}${running}`, {
-  color: "#a2b47c",
-});
-
-globalStyle(`${logEntry}${failed} ${logDot}`, {
-  color: "#ab6458",
-  background: "#f6e8e1",
-});
-
-globalStyle(`${logDetails} pre`, {
-  whiteSpace: "pre-wrap",
-  overflowWrap: "anywhere",
-  margin: "8px 0 0",
-  fontSize: "9px",
 });
 
 globalStyle(`${message}${user} ${messageAvatar}`, {
@@ -1239,14 +1115,6 @@ globalStyle(`${emptyCart}`, {
   "@media": {
     "(min-height: 1000px)": {
       marginTop: "12%",
-    },
-  },
-});
-
-globalStyle(`${emptyLogs}`, {
-  "@media": {
-    "(min-height: 1000px)": {
-      marginTop: "13%",
     },
   },
 });

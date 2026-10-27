@@ -1,12 +1,12 @@
 "use client";
 
-import * as styles from "../styles.css";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+import * as styles from "../styles.css";
+import { text } from "../ui/text";
 import { useWorkspace, useWorkspaceClient } from "../workspace";
 import { Icon } from "./ui/icon";
-import { text } from "../ui/text";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const view = useWorkspace((state) => state);
@@ -17,12 +17,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     <>
       <header className={styles.appHeader}>
         <Link className={styles.brand} href="/">
-          <span className={styles.brandMark}>
-            <Icon name="bag" />
-          </span>
           <span>
             {text.brand}
-            <small>YOUR PERSONAL SHOPPING ASSISTANT</small>
+            <small>SHOWCASE</small>
           </span>
         </Link>
         <nav aria-label="Main navigation">

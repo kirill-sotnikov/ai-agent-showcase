@@ -73,8 +73,38 @@ describe("controlled workflow", () => {
 
     expect(events.at(-1)).toMatchObject({
       type: "request.completed",
-      payload: { cartStatus: "committed" },
+      payload: { agent: "orchestrator", cartStatus: "committed" },
     });
+
+    expect(
+      events
+        .filter((event) => event.type === "step.started")
+        .map((event) => event.payload),
+    ).toEqual([
+      expect.objectContaining({ stage: "checking", agent: "guard" }),
+      expect.objectContaining({ stage: "routing", agent: "router" }),
+      expect.objectContaining({ stage: "executing", agent: "action" }),
+      expect.objectContaining({ stage: "validating", agent: "orchestrator" }),
+      expect.objectContaining({
+        stage: "awaiting_commit",
+        agent: "orchestrator",
+      }),
+      expect.objectContaining({ stage: "responding", agent: "composer" }),
+      expect.objectContaining({ stage: "completed", agent: "orchestrator" }),
+    ]);
+
+    expect(
+      events
+        .filter((event) => event.type === "step.completed")
+        .map((event) => event.payload),
+    ).toContainEqual(
+      expect.objectContaining({ stage: "routing", agent: "router" }),
+    );
+
+    for (const event of events.filter((event) =>
+      event.type.startsWith("tool."),
+    ))
+      expect(event.payload).toMatchObject({ agent: "action" });
   });
 
   it("keeps questions read-only and clarifies ambiguous commands", async () => {
@@ -82,9 +112,14 @@ describe("controlled workflow", () => {
       0,
     );
 
-    expect(
-      (await execute("Find wireless headphones under $100.")).proposals,
-    ).toHaveLength(0);
+    const question = await execute("Find wireless headphones under $100.");
+
+    expect(question.proposals).toHaveLength(0);
+
+    for (const event of question.events.filter((event) =>
+      event.type.startsWith("tool."),
+    ))
+      expect(event.payload).toMatchObject({ agent: "knowledge" });
 
     const result = await execute("Add the headphones.");
 
@@ -143,7 +178,11 @@ describe("controlled workflow", () => {
     const result = await execute("Add two products", new BadSecondTool());
 
     expect(result.proposals).toHaveLength(0);
-    expect(result.events.at(-1)?.type).toBe("request.failed");
+
+    expect(result.events.at(-1)).toMatchObject({
+      type: "request.failed",
+      payload: { agent: "action" },
+    });
   });
 
   it("discards all staged mutations when clarification is returned", async () => {
@@ -184,7 +223,7 @@ describe("controlled workflow", () => {
 
     expect(result.events.at(-1)).toMatchObject({
       type: "request.failed",
-      payload: { cartStatus: "committed" },
+      payload: { agent: "composer", cartStatus: "committed" },
     });
 
     expect(
