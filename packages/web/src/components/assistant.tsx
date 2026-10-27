@@ -1,10 +1,10 @@
 "use client";
 
 import * as styles from "../styles.css";
-import { useWorkspace, useWorkspaceActions } from "../workspace";
 import { text } from "../ui/text";
-import { Chat } from "./chat/chat";
+import { useWorkspace, useWorkspaceActions } from "../workspace";
 import { Cart } from "./cart/cart";
+import { Chat } from "./chat/chat";
 import { ExecutionLog } from "./execution-log/execution-log";
 
 export function Assistant() {
@@ -21,9 +21,6 @@ export function Assistant() {
       >
         <div className={styles.panelHeading}>
           <div>
-            <span className={styles.eyebrow}>
-              LET’S FIND YOUR NEXT FAVORITE
-            </span>
             <h1>{text.assistant}</h1>
           </div>
           <div className={styles.connection} role="status">

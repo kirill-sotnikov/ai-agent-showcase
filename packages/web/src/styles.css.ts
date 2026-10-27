@@ -9,6 +9,7 @@ export const vars = createGlobalTheme(":root", {
   green: "#254b40",
   muted: "#8a908a",
   border: "#e5e7df",
+  minimumFontSize: "14px",
 });
 
 const pulseAnimation = keyframes({ "50%": { opacity: 0.3 } });
@@ -49,7 +50,7 @@ export const localIndicator = style({
   display: "flex",
   gap: "8px",
   alignItems: "center",
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   color: "#8c9389",
   letterSpacing: "0.1px",
 });
@@ -93,7 +94,7 @@ export const panelHeading = style({
 });
 
 export const eyebrow = style({
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   letterSpacing: "1.5px",
   fontWeight: 600,
   color: "#8f998d",
@@ -105,7 +106,7 @@ export const connection = style({
   display: "flex",
   alignItems: "center",
   gap: "7px",
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   color: "#788570",
   background: "#f0f4e9",
   padding: "7px 10px",
@@ -159,11 +160,12 @@ export const composerArea = style({
 });
 
 export const runStatus = style({
-  height: "23px",
+  minHeight: "23px",
+  flexWrap: "wrap",
   display: "flex",
   alignItems: "center",
   gap: "7px",
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   color: "#92988b",
   marginBottom: "7px",
 });
@@ -190,7 +192,7 @@ export const button = style({
   borderRadius: "7px",
   padding: "10px 15px",
   fontWeight: 500,
-  fontSize: "11px",
+  fontSize: vars.minimumFontSize,
   whiteSpace: "nowrap",
   transition: "background 0.15s",
 });
@@ -198,20 +200,21 @@ export const button = style({
 export const secondary = style({});
 
 export const inputHint = style({
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   textAlign: "center",
   color: "#a1a799",
   padding: "11px 0",
 });
 
 export const chatFootnote = style({
+  flexWrap: "wrap",
   padding: "12px 25px",
   borderTop: "1px solid #edf0e7",
   display: "flex",
   alignItems: "center",
   gap: "6px",
   color: "#8f998b",
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
 });
 
 export const compactHeading = style({
@@ -233,7 +236,7 @@ export const headingLabel = style({
 export const count = style({
   background: "#edf1e6",
   color: "#7a8d6b",
-  fontSize: "9px",
+  fontSize: vars.minimumFontSize,
   padding: "3px 6px",
   borderRadius: "5px",
   minWidth: "21px",
@@ -253,7 +256,7 @@ export const logScroll = style({
   background: "#1c211e",
   color: "#dce4dc",
   fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   lineHeight: 1.7,
   whiteSpace: "pre-wrap",
   overflowWrap: "anywhere",
@@ -291,7 +294,7 @@ export const cartTotal = style({
   justifyContent: "space-between",
   alignItems: "center",
   background: "#fafcf5",
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   fontWeight: 500,
 });
 
@@ -300,7 +303,7 @@ export const muted = style({
 });
 
 export const small = style({
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
 });
 
 export const cartItem = style({
@@ -334,7 +337,7 @@ export const cartItemMain = style({
 });
 
 export const linePrice = style({
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   fontWeight: 500,
   marginTop: "18px",
 });
@@ -355,7 +358,7 @@ export const stepper = style({
 });
 
 export const textButton = style({
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   color: "#7c8b70",
   padding: "4px 0",
   textDecoration: "underline",
@@ -388,13 +391,13 @@ export const messageAvatar = style({
   display: "grid",
   placeItems: "center",
   flexShrink: 0,
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
 });
 
 export const user = style({});
 
 export const messageMeta = style({
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   fontWeight: 600,
   color: "#435c3c",
   display: "flex",
@@ -404,7 +407,7 @@ export const messageMeta = style({
 });
 
 export const savedTag = style({
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   borderRadius: "3px",
   background: "#eef4e7",
   padding: "3px 5px",
@@ -436,7 +439,7 @@ export const identityCard = style({
 });
 
 export const sectionNumber = style({
-  fontSize: "9px",
+  fontSize: vars.minimumFontSize,
   color: "#abb39b",
   letterSpacing: "1px",
 });
@@ -484,7 +487,7 @@ export const attributeTags = style({
 });
 
 export const settingsFooter = style({
-  fontSize: "9px",
+  fontSize: vars.minimumFontSize,
   color: "#9da78f",
   display: "flex",
   justifyContent: "space-between",
@@ -539,7 +542,7 @@ export const errorBanner = style({
   padding: "12px 25px",
   background: "#f5e9df",
   color: "#8f5644",
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -580,7 +583,7 @@ globalStyle(`:root`, {
   fontSynthesis: "none",
   WebkitFontSmoothing: "antialiased",
   fontWeight: 400,
-  fontSize: "14px",
+  fontSize: vars.minimumFontSize,
 });
 
 globalStyle(`*`, {
@@ -668,7 +671,7 @@ globalStyle(`svg`, {
 
 globalStyle(`${brand} small`, {
   display: "block",
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   fontWeight: 500,
   letterSpacing: "1.65px",
   color: "#91988e",
@@ -690,7 +693,7 @@ globalStyle(`${appHeader} nav a`, {
   gap: "8px",
   padding: "10px 18px",
   color: "#747d73",
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   borderRadius: "6px",
 });
 
@@ -743,7 +746,7 @@ globalStyle(`${welcome} > h2`, {
 });
 
 globalStyle(`${welcome} > p`, {
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   lineHeight: 1.8,
   color: "#858d82",
   margin: "auto",
@@ -756,7 +759,7 @@ globalStyle(`${suggestions} button`, {
   position: "relative",
   textAlign: "left",
   padding: "13px 34px 13px 16px",
-  fontSize: "11px",
+  fontSize: vars.minimumFontSize,
   lineHeight: 1.4,
   borderRadius: "9px",
   color: "#75816f",
@@ -769,7 +772,7 @@ globalStyle(`${suggestions} button:hover`, {
 
 globalStyle(`${suggestions} button > span`, {
   display: "block",
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   fontWeight: 600,
   color: "#3b5243",
   marginBottom: "5px",
@@ -789,7 +792,7 @@ globalStyle(`${composer} textarea`, {
   minWidth: 0,
   background: "transparent",
   padding: "1px",
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   lineHeight: 1.6,
   outline: "none",
   color: "#33453b",
@@ -851,7 +854,7 @@ globalStyle(`${emptyCart} h3`, {
 });
 
 globalStyle(`${emptyCart} p`, {
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   color: "#929b87",
   lineHeight: 1.8,
   marginTop: "9px",
@@ -859,7 +862,7 @@ globalStyle(`${emptyCart} p`, {
 
 globalStyle(`${cartTotal} small`, {
   display: "block",
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   color: "#9aa28d",
   marginTop: "5px",
   fontWeight: 400,
@@ -897,7 +900,7 @@ globalStyle(`${productTile}${lavender}`, {
 });
 
 globalStyle(`${cartItem} h3`, {
-  fontSize: "13px",
+  fontSize: vars.minimumFontSize,
   margin: "4px 60px 5px 0",
   overflowWrap: "anywhere",
 });
@@ -905,7 +908,7 @@ globalStyle(`${cartItem} h3`, {
 globalStyle(`${stepper} button`, {
   width: "24px",
   height: "24px",
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   color: "#6a7d5c",
 });
 
@@ -914,7 +917,7 @@ globalStyle(`${stepper} input`, {
   border: 0,
   textAlign: "center",
   background: "none",
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   padding: 0,
   appearance: "textfield",
   MozAppearance: "textfield",
@@ -936,13 +939,13 @@ globalStyle(`${message} > div`, {
 });
 
 globalStyle(`${messageMeta} time`, {
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   fontWeight: 400,
   color: "#a2a995",
 });
 
 globalStyle(`${message} p`, {
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   lineHeight: 1.85,
   whiteSpace: "pre-wrap",
   overflowWrap: "anywhere",
@@ -958,7 +961,7 @@ globalStyle(`${message}${user} p`, {
 
 globalStyle(`${message} small`, {
   display: "block",
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   color: "#ab9074",
   marginTop: "6px",
 });
@@ -972,7 +975,7 @@ globalStyle(`${settingsTitle} h1`, {
 });
 
 globalStyle(`${settingsTitle} p`, {
-  fontSize: "12px",
+  fontSize: vars.minimumFontSize,
   color: "#8c9983",
 });
 
@@ -986,7 +989,7 @@ globalStyle(`${settingsCard} h2`, {
 });
 
 globalStyle(`${settingsCard} p`, {
-  fontSize: "11px",
+  fontSize: vars.minimumFontSize,
   lineHeight: 1.8,
   color: "#929d87",
 });
@@ -995,7 +998,7 @@ globalStyle(`${settingsCard} label`, {
   display: "flex",
   flexDirection: "column",
   gap: "9px",
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   fontWeight: 500,
   color: "#6a7a5e",
 });
@@ -1007,7 +1010,7 @@ ${settingsCard} input`,
     border: "1px solid #dce4d4",
     borderRadius: "6px",
     padding: "12px",
-    fontSize: "11px",
+    fontSize: vars.minimumFontSize,
     color: "#5d7052",
     lineHeight: 1.7,
     background: "#fff",
@@ -1022,7 +1025,7 @@ globalStyle(`${identityCard} > form > textarea`, {
 });
 
 globalStyle(`${formFooter} > span`, {
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   color: "#a2ac96",
 });
 
@@ -1031,26 +1034,26 @@ globalStyle(`${catalogHeader} > div`, {
 });
 
 globalStyle(`${catalogItemInfo} h3`, {
-  fontSize: "14px",
+  fontSize: vars.minimumFontSize,
   margin: "4px 0 7px",
   overflowWrap: "anywhere",
 });
 
 globalStyle(`${catalogItemInfo} > p`, {
-  fontSize: "10px",
+  fontSize: vars.minimumFontSize,
   maxWidth: "500px",
   overflowWrap: "anywhere",
 });
 
 globalStyle(`${catalogItem} > strong`, {
-  fontSize: "14px",
+  fontSize: vars.minimumFontSize,
   fontWeight: 500,
   color: "#5b7050",
   whiteSpace: "nowrap",
 });
 
 globalStyle(`${attributeTags} span`, {
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   background: "#f1f5e9",
   color: "#99a68b",
   borderRadius: "4px",
@@ -1074,7 +1077,7 @@ globalStyle(`${formGrid} textarea`, {
 });
 
 globalStyle(`${formGrid} small`, {
-  fontSize: "8px",
+  fontSize: vars.minimumFontSize,
   color: "#99a88c",
   lineHeight: 1.6,
 });
@@ -1083,7 +1086,7 @@ globalStyle(
   `${notice},
 ${pending}`,
   {
-    fontSize: "10px",
+    fontSize: vars.minimumFontSize,
     color: "#8b8e62",
     background: "#f1f1de",
     padding: "12px",
@@ -1093,7 +1096,7 @@ ${pending}`,
 );
 
 globalStyle(`${errorBanner} button`, {
-  fontSize: "11px",
+  fontSize: vars.minimumFontSize,
   textDecoration: "underline",
   display: "flex",
   alignItems: "center",
@@ -1179,7 +1182,7 @@ globalStyle(`${conversation}`, {
 globalStyle(`${linePrice}`, {
   "@media": {
     "(max-width: 1000px)": {
-      fontSize: "11px",
+      fontSize: vars.minimumFontSize,
     },
   },
 });
@@ -1206,7 +1209,7 @@ globalStyle(`${cartItem} h3`, {
   "@media": {
     "(max-width: 1000px)": {
       marginRight: 0,
-      fontSize: "12px",
+      fontSize: vars.minimumFontSize,
     },
   },
 });
@@ -1249,7 +1252,7 @@ globalStyle(`${brand}`, {
 globalStyle(`${brand} small`, {
   "@media": {
     "(max-width: 720px)": {
-      fontSize: "6px",
+      fontSize: vars.minimumFontSize,
       letterSpacing: "0.8px",
     },
   },
@@ -1269,7 +1272,7 @@ globalStyle(`${appHeader} nav a`, {
   "@media": {
     "(max-width: 720px)": {
       padding: "9px 11px",
-      fontSize: "10px",
+      fontSize: vars.minimumFontSize,
     },
   },
 });
@@ -1357,7 +1360,7 @@ globalStyle(`${panelHeading} h1`, {
 globalStyle(`${eyebrow}`, {
   "@media": {
     "(max-width: 720px)": {
-      fontSize: "7px",
+      fontSize: vars.minimumFontSize,
     },
   },
 });
@@ -1406,7 +1409,7 @@ globalStyle(`${catalogHeader}`, {
 globalStyle(`${catalogHeader} ${button}`, {
   "@media": {
     "(max-width: 720px)": {
-      fontSize: "9px",
+      fontSize: vars.minimumFontSize,
       padding: "9px",
     },
   },
@@ -1415,7 +1418,7 @@ globalStyle(`${catalogHeader} ${button}`, {
 globalStyle(`${catalogHeader} p`, {
   "@media": {
     "(max-width: 720px)": {
-      fontSize: "10px",
+      fontSize: vars.minimumFontSize,
     },
   },
 });
@@ -1450,7 +1453,7 @@ globalStyle(`${catalogItem} > strong`, {
   "@media": {
     "(max-width: 720px)": {
       marginLeft: "62px",
-      fontSize: "12px",
+      fontSize: vars.minimumFontSize,
     },
   },
 });
@@ -1469,7 +1472,7 @@ globalStyle(`${settingsFooter}`, {
   "@media": {
     "(max-width: 720px)": {
       alignItems: "flex-start",
-      fontSize: "8px",
+      fontSize: vars.minimumFontSize,
     },
   },
 });

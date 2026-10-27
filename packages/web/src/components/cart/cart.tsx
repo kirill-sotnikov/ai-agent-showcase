@@ -33,7 +33,7 @@ export function Cart({
           <span className={styles.count}>{count}</span>
         </div>
         <span className={`${styles.muted} ${styles.small}`}>
-          {state.settings.currency}
+          {formatMoney(cartTotal(state.cart, state.products))}
         </span>
       </div>
       <div className={styles.cartScroll}>
@@ -59,9 +59,6 @@ export function Cart({
                     {product.category || "PRODUCT"}
                   </span>
                   <h3>{product.name}</h3>
-                  <span className={`${styles.small} ${styles.muted}`}>
-                    {formatMoney(product.priceMinor)} each
-                  </span>
                   <div className={styles.quantityRow}>
                     <div className={styles.stepper}>
                       <button
@@ -154,12 +151,6 @@ export function Cart({
             {text.pending}
           </p>
         )}
-      </div>
-      <div data-testid="cart-total" className={styles.cartTotal}>
-        <span>
-          {text.total}
-        </span>
-        <strong>{formatMoney(cartTotal(state.cart, state.products))}</strong>
       </div>
     </section>
   );
