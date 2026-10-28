@@ -14,7 +14,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <>
+    <div className={styles.appShell}>
       <header className={styles.appHeader}>
         <Link className={styles.brand} href="/">
           <span>
@@ -45,6 +45,25 @@ export function AppShell({ children }: { children: ReactNode }) {
           {text.local}
         </span>
       </header>
+      {view.showWelcome && (
+        <section
+          className={styles.welcomeBanner}
+          aria-label="Welcome to AI Agent Showcase"
+        >
+          <Icon name="spark" size={22} />
+          <div>
+            <strong>{text.visitorWelcome}</strong>
+            <p>{text.visitorWelcomeBody}</p>
+          </div>
+          <button
+            className={styles.welcomeDismiss}
+            aria-label="Dismiss welcome"
+            onClick={client.dismissWelcome}
+          >
+            <Icon name="close" size={18} />
+          </button>
+        </section>
+      )}
       {view.error && (
         <div
           data-testid="workspace-error"
@@ -74,6 +93,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           {view.loadError ? "Unable to load saved data" : text.loading}
         </main>
       )}
-    </>
+    </div>
   );
 }

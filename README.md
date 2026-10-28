@@ -101,6 +101,8 @@ localStorage is per origin and browser, readable by scripts on that origin, and 
 
 `.env` is ignored by Git. `.env.example` contains placeholders only. Keys are never sent to the browser, Logs or localStorage.
 
+Set `TG_NOTIFY_BOT_TOKEN` and `TG_NOTIFY_BOT_CHAT` in the server environment (or root `.env`) to enable Telegram notifications for new visitors. When no saved app state exists, initialization creates it under the cross-tab writer lock, shows a dismissible English welcome banner, and posts one event to `/api/visitors/new`. Fastify sends `[AI Agent Showcase] Новый посетитель` without a date or time through the [Telegram Bot API](https://core.telegram.org/bots/api#sendmessage). Reloading, navigating, or resetting an existing workspace does not notify again; clearing the localStorage app key makes the next visit new. Notification delivery has a five-second timeout, does not block the workspace, and is not retried. With either Telegram variable missing, the server logs the missing variable names and the notification endpoint returns HTTP 503. Set both variables in the root `.env` and restart the Fastify service after changing them. To test a new visit without deleting your current workspace, open the app in a fresh private browser session. Browser tests disable Telegram delivery.
+
 | Variable                          | Default / purpose                                       |
 | --------------------------------- | ------------------------------------------------------- |
 | `HOST`, `PORT`                    | Fastify listen address: `127.0.0.1`, `3001`             |

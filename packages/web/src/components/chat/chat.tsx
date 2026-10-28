@@ -24,7 +24,8 @@ export function Chat({
   const bottom = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottom.current?.scrollIntoView({ block: "nearest" });
+    if (state.messages.length > 0 || partial)
+      bottom.current?.scrollIntoView({ block: "nearest" });
   }, [state.messages.length, partial]);
 
   const submit = async (event: React.FormEvent) => {

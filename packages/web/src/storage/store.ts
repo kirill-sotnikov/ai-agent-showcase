@@ -100,6 +100,7 @@ export class WorkspaceStore {
     readonly storage: Pick<Storage, "getItem" | "setItem">,
     readonly locks: LockProvider,
     readonly changed: (state: PersistedState) => void = () => {},
+    readonly created: (state: PersistedState) => void = () => {},
   ) {}
 
   read(): PersistedState | null {
@@ -188,7 +189,7 @@ export class WorkspaceStore {
       const state = this.read();
 
       if (state) this.changed(state);
-      else this.save(initialState());
+      else this.created(this.save(initialState()));
     });
 
     // A live run in another tab owns this lock. Never interrupt it during reload.

@@ -14,8 +14,15 @@ export const vars = createGlobalTheme(":root", {
 
 const pulseAnimation = keyframes({ "50%": { opacity: 0.3 } });
 
+export const appShell = style({
+  display: "flex",
+  flexDirection: "column",
+  height: "100dvh",
+});
+
 export const appHeader = style({
   height: "89px",
+  flexShrink: 0,
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -55,11 +62,40 @@ export const localIndicator = style({
   letterSpacing: "0.1px",
 });
 
+export const welcomeBanner = style({
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "14px",
+  margin: "18px 22px 0",
+  padding: "18px 20px",
+  border: "1px solid #ccd9c5",
+  borderRadius: "12px",
+  background: "#edf4e6",
+  color: vars.green,
+  fontSize: vars.minimumFontSize,
+  lineHeight: 1.6,
+});
+
+globalStyle(`${welcomeBanner} p`, { margin: "4px 0 0" });
+
+export const welcomeDismiss = style({
+  display: "grid",
+  placeItems: "center",
+  flexShrink: 0,
+  marginLeft: "auto",
+  minWidth: "32px",
+  minHeight: "32px",
+  borderRadius: "6px",
+  ":hover": { background: "#dce8d5" },
+});
+
 export const dot = style({});
 
 export const online = style({});
 
 export const assistantGrid = style({
+  flex: "1 0 0",
+  width: "100%",
   height: "calc(100dvh - 89px)",
   minHeight: "560px",
   display: "grid",

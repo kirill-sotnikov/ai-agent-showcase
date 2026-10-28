@@ -25,6 +25,7 @@ export interface ViewState {
   loadError: boolean;
   pending: Proposal | null;
   partial: string;
+  showWelcome: boolean;
 }
 export class WorkspaceClient {
   readonly state = createStore<ViewState>(() => ({
@@ -36,6 +37,7 @@ export class WorkspaceClient {
     loadError: false,
     pending: null,
     partial: "",
+    showWelcome: false,
   }));
 
   private lifecycle = 0;
@@ -47,6 +49,17 @@ export class WorkspaceClient {
     },
     browserLocks(),
     (workspace) => this.update({ workspace }),
+    () => {
+      this.update({ showWelcome: true });
+
+      // Initialization holds the writer lock, so only the tab creating state notifies.
+      void fetch("/api/visitors/new", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ occurredAt: new Date().toISOString() }),
+        keepalive: true,
+      }).catch(() => {});
+    },
   );
 
   private socket: WebSocket | null = null;
@@ -87,6 +100,8 @@ export class WorkspaceClient {
   }
 
   clearError = () => this.update({ error: null });
+
+  dismissWelcome = () => this.update({ showWelcome: false });
 
   private onStorage = (event: StorageEvent) => {
     if (event.key === STORAGE_KEY || event.key === null) {

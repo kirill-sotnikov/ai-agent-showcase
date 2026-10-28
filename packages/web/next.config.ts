@@ -15,7 +15,7 @@ const config: NextConfig = {
     return config;
   },
   async rewrites() {
-    return ["/ws", "/health", "/ready"].map((source) => ({
+    return ["/ws", "/health", "/ready", "/api/visitors/new"].map((source) => ({
       source,
       destination: `${serviceUrl}${source}`,
     }));

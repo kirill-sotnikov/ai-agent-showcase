@@ -10,6 +10,8 @@ const envSchema = z
     LLM_PROVIDER: z.enum(["openai", "fake"]).default("openai"),
     OPENAI_API_KEY: z.string().optional(),
     OPENAI_MODEL: z.string().optional(),
+    TG_NOTIFY_BOT_TOKEN: z.string().optional(),
+    TG_NOTIFY_BOT_CHAT: z.string().optional(),
     ALLOWED_ORIGINS: z
       .string()
       .default("http://localhost:3000,http://127.0.0.1:3000"),

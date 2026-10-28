@@ -32,7 +32,10 @@ export function Cart({
           <h2>{text.cart}</h2>
           <span className={styles.count}>{count}</span>
         </div>
-        <span className={`${styles.muted} ${styles.small}`}>
+        <span
+          data-testid="cart-total"
+          className={`${styles.muted} ${styles.small}`}
+        >
           {formatMoney(cartTotal(state.cart, state.products))}
         </span>
       </div>

@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
+import { z } from "zod";
 import {
   clientCommandSchema,
   eventPayloads,
@@ -16,6 +17,11 @@ import { OpenAIProvider } from "./ai/llm/openai.js";
 import type { Provider } from "./ai/llm/types.js";
 import { runWorkflow, type Emit } from "./ai/orchestrator/workflow.js";
 import { logExecution } from "./observability/logger.js";
+import {
+  missingTelegramSettings,
+  notifyNewVisitor,
+  TelegramNotificationError,
+} from "./notifications/telegram.js";
 
 export function createServer(
   config: Config = readConfig(),
@@ -41,12 +47,56 @@ export function createServer(
 
   const ready = () => readiness(config);
 
+  const missingTelegram = missingTelegramSettings(config);
+
+  if (missingTelegram.length)
+    server.log.warn(
+      { missingVariables: missingTelegram },
+      "Telegram visitor notifications are not configured",
+    );
+
   server.get("/health", () => ({ status: "ok" }));
 
   server.get("/ready", (_request, reply) => {
     const status = ready();
 
     return reply.code(status.ready ? 200 : 503).send(status);
+  });
+
+  server.post("/api/visitors/new", async (request, reply) => {
+    if (!request.headers.origin || !origins.has(request.headers.origin))
+      return reply.code(403).send({ error: "Origin is not allowed." });
+
+    const event = z
+      .object({ occurredAt: z.iso.datetime() })
+      .strict()
+      .safeParse(request.body);
+
+    if (!event.success)
+      return reply.code(400).send({ error: "Invalid visitor event." });
+
+    try {
+      await notifyNewVisitor(config);
+
+      return reply.code(204).send();
+    } catch (error) {
+      // Fetch errors may include the bot token in their URL. Never log them.
+      server.log.warn(
+        {
+          reason:
+            error instanceof TelegramNotificationError
+              ? error.message
+              : "Telegram request failed or timed out.",
+        },
+        "Unable to send new visitor notification to Telegram",
+      );
+
+      return reply
+        .code(
+          error instanceof TelegramNotificationError ? error.statusCode : 502,
+        )
+        .send({ error: "Notification could not be sent." });
+    }
   });
 
   server.register(async (scope) => {

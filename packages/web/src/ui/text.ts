@@ -3,6 +3,9 @@ export const text = {
   subtitle: "A little help finding the right thing.",
   assistant: "Agent",
   settings: "Settings",
+  visitorWelcome: "Hi! This is AI Agent Showcase.",
+  visitorWelcomeBody:
+    "Just ask the agent to find the product you need and add it to your cart. You can view and edit products in Settings. The AI agent's execution logs appear below the cart. Welcome!",
   welcome: "Hi! I'm your shopping agent",
   welcomeBody:
     "Explore your catalog, compare the details, or let me put a cart together for you.",

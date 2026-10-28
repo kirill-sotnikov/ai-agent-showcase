@@ -2,6 +2,43 @@ import { expect, test, type Page } from "@playwright/test";
 
 const key = "ai-shopping-assistant:v1";
 
+test("welcomes new visitors once, including when opening Settings first", async ({
+  page,
+}) => {
+  const events: { occurredAt: string }[] = [];
+
+  await page.route("**/api/visitors/new", async (route) => {
+    events.push(route.request().postDataJSON());
+    await route.fulfill({ status: 204 });
+  });
+
+  await page.goto("/settings");
+
+  const banner = page.getByRole("region", {
+    name: "Welcome to AI Agent Showcase",
+  });
+
+  await expect(banner).toContainText("Hi! This is AI Agent Showcase.");
+  await expect(banner).toContainText("view and edit products in Settings");
+  await expect(banner).toContainText("execution logs appear below the cart");
+  await expect.poll(() => events.length).toBe(1);
+  expect(Number.isNaN(Date.parse(events[0].occurredAt))).toBe(false);
+
+  await page.getByRole("button", { name: "Dismiss welcome" }).click();
+  await expect(banner).toHaveCount(0);
+  await page.getByRole("link", { name: "Agent", exact: true }).click();
+  await expect(page).toHaveURL("/");
+  await page.reload();
+  await expect(page.getByLabel("Message", { exact: true })).toBeVisible();
+  await expect(banner).toHaveCount(0);
+  expect(events).toHaveLength(1);
+
+  await page.evaluate((key) => localStorage.removeItem(key), key);
+  await page.reload();
+  await expect(banner).toBeVisible();
+  await expect.poll(() => events.length).toBe(2);
+});
+
 async function send(page: Page, message: string) {
   await page.getByLabel("Message", { exact: true }).fill(message);
 
@@ -349,7 +386,7 @@ test("corrupt data requires an explicit reset", async ({ page }) => {
   await page.getByRole("button", { name: "Reset saved data" }).click();
 
   await expect(
-    page.getByRole("heading", { name: "How can I help you shop today?" }),
+    page.getByRole("heading", { name: "Hi! I'm your shopping agent" }),
   ).toBeVisible();
 });
 
@@ -429,7 +466,7 @@ test("Next navigation preserves the active request and one WebSocket connection"
     page.getByRole("button", { name: "Save identity" }),
   ).toBeDisabled();
 
-  await page.getByRole("link", { name: "Assistant", exact: true }).click();
+  await page.getByRole("link", { name: "Agent", exact: true }).click();
 
   await expect(
     page.getByRole("button", { name: "Stop", exact: true }),
