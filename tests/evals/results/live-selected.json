@@ -1,0 +1,1493 @@
+{
+  "evalId": "eval-wjA-2026-10-28T12:00:06",
+  "results": {
+    "version": 3,
+    "timestamp": "2026-10-28T12:00:06.735Z",
+    "prompts": [
+      {
+        "id": "21e536caf6f2870857967c9a82beb9093b792433e6d1deef3661148f3e61785b",
+        "raw": "{{message}}",
+        "label": "{{message}}",
+        "provider": "shopping:gpt-6-luna",
+        "metrics": {
+          "score": 6,
+          "testPassCount": 6,
+          "testFailCount": 0,
+          "testErrorCount": 0,
+          "testCacheHitCount": 0,
+          "assertPassCount": 23,
+          "assertFailCount": 0,
+          "totalLatencyMs": 49535,
+          "tokenUsage": {
+            "prompt": 36970,
+            "completion": 1244,
+            "cached": 0,
+            "total": 38214,
+            "numRequests": 34,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "namedScores": {
+            "outcome": 6,
+            "cart": 6,
+            "persistence": 6,
+            "products": 4,
+            "missing_information": 1
+          },
+          "namedScoresCount": {
+            "outcome": 6,
+            "cart": 6,
+            "persistence": 6,
+            "products": 4,
+            "missing_information": 1
+          },
+          "namedScoreWeights": {
+            "outcome": 6,
+            "cart": 6,
+            "persistence": 6,
+            "products": 4,
+            "missing_information": 1
+          },
+          "cost": 0.004319
+        }
+      }
+    ],
+    "results": [
+      {
+        "cost": 0.0004949,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1,
+            "products": 1
+          },
+          "namedScoreWeights": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1,
+            "products": 1
+          },
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Outcome: completed",
+              "assertion": {
+                "type": "javascript",
+                "metric": "outcome",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Cart matches expected items and quantities",
+              "assertion": {
+                "type": "javascript",
+                "metric": "cart",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Persistence status and confirmation order are correct",
+              "assertion": {
+                "type": "javascript",
+                "metric": "persistence",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Response contains exactly the expected products",
+              "assertion": {
+                "type": "javascript",
+                "metric": "products",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            }
+          ]
+        },
+        "id": "5e400ce0-1789-43c5-9469-66efb79fb21b",
+        "latencyMs": 6208,
+        "namedScores": {
+          "outcome": 1,
+          "cart": 1,
+          "persistence": 1,
+          "products": 1
+        },
+        "prompt": {
+          "raw": "Find wireless headphones under $100.",
+          "label": "{{message}}",
+          "config": {}
+        },
+        "promptId": "21e536caf6f2870857967c9a82beb9093b792433e6d1deef3661148f3e61785b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "shopping:gpt-6-luna",
+          "label": "shopping:gpt-6-luna"
+        },
+        "response": {
+          "output": "{\"outcome\":\"completed\",\"cart\":{\"items\":[]},\"cartStatus\":\"unchanged\",\"productIds\":[\"44444444-4444-4444-8444-444444444444\"],\"messages\":[\"Here are the matching products.\\n\\nCloud Wireless Headphones — $89.00. Lightweight wireless headphones with noise isolation and USB-C charging. color: Black; battery: 30 hours; connectivity: Bluetooth.\"],\"clarification\":null,\"prematureClaim\":false,\"committed\":false,\"error\":null,\"events\":[\"request.accepted\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"step.completed\",\"step.completed\",\"step.started\",\"tool.started\",\"tool.completed\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"assistant.message\",\"step.completed\",\"step.started\",\"request.completed\"],\"tools\":[\"search_products\"],\"durationMs\":6197,\"usage\":{\"inputTokens\":4174,\"outputTokens\":155,\"calls\":5}}",
+          "cost": 0.0004949,
+          "tokenUsage": {
+            "prompt": 4174,
+            "completion": 155,
+            "cached": 0,
+            "total": 4329,
+            "numRequests": 5,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "metadata": {
+            "scenarioId": "price-filter",
+            "promptVersion": "shopping-v1"
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "description": "price-filter",
+          "vars": {
+            "message": "Find wireless headphones under $100.",
+            "scenarioId": "price-filter"
+          },
+          "metadata": {
+            "group": "behavior",
+            "model": "gpt-6-luna",
+            "promptVersion": "shopping-v1"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "metric": "outcome"
+            },
+            {
+              "type": "javascript",
+              "metric": "cart"
+            },
+            {
+              "type": "javascript",
+              "metric": "persistence"
+            },
+            {
+              "type": "javascript",
+              "metric": "products"
+            }
+          ],
+          "options": {}
+        },
+        "testIdx": 0,
+        "tokenUsage": {
+          "prompt": 4174,
+          "completion": 155,
+          "cached": 0,
+          "total": 4329,
+          "numRequests": 5,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {
+          "message": "Find wireless headphones under $100.",
+          "scenarioId": "price-filter"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1",
+          "scenarioId": "price-filter",
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0.0008748000000000001,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1,
+            "products": 1,
+            "missing_information": 1
+          },
+          "namedScoreWeights": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1,
+            "products": 1,
+            "missing_information": 1
+          },
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Outcome: completed",
+              "assertion": {
+                "type": "javascript",
+                "metric": "outcome",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Cart matches expected items and quantities",
+              "assertion": {
+                "type": "javascript",
+                "metric": "cart",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Persistence status and confirmation order are correct",
+              "assertion": {
+                "type": "javascript",
+                "metric": "persistence",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Response contains exactly the expected products",
+              "assertion": {
+                "type": "javascript",
+                "metric": "products",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Missing specifications are communicated correctly",
+              "assertion": {
+                "type": "javascript",
+                "metric": "missing_information",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            }
+          ]
+        },
+        "id": "428eefaa-4da7-4a2c-825c-be5b4e8eb0d8",
+        "latencyMs": 10542,
+        "namedScores": {
+          "outcome": 1,
+          "cart": 1,
+          "persistence": 1,
+          "products": 1,
+          "missing_information": 1
+        },
+        "prompt": {
+          "raw": "Are the headphones waterproof?",
+          "label": "{{message}}",
+          "config": {}
+        },
+        "promptId": "21e536caf6f2870857967c9a82beb9093b792433e6d1deef3661148f3e61785b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "shopping:gpt-6-luna",
+          "label": "shopping:gpt-6-luna"
+        },
+        "response": {
+          "output": "{\"outcome\":\"completed\",\"cart\":{\"items\":[]},\"cartStatus\":\"unchanged\",\"productIds\":[\"44444444-4444-4444-8444-444444444444\",\"55555555-5555-4555-8555-555555555555\"],\"messages\":[\"Here is what the catalog says.\\n\\nCloud Wireless Headphones — $89.00. Lightweight wireless headphones with noise isolation and USB-C charging. color: Black; battery: 30 hours; connectivity: Bluetooth.\\n\\nStudio Wireless Headphones — $129.00. Over-ear wireless headphones with active noise cancellation. color: Silver; battery: 40 hours; connectivity: Bluetooth.\\n\\nThe catalog does not include further specifications for that question.\"],\"clarification\":null,\"prematureClaim\":false,\"committed\":false,\"error\":null,\"events\":[\"request.accepted\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"step.completed\",\"step.completed\",\"step.started\",\"tool.started\",\"tool.completed\",\"tool.started\",\"tool.completed\",\"tool.started\",\"tool.completed\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"assistant.message\",\"step.completed\",\"step.started\",\"request.completed\"],\"tools\":[\"search_products\",\"get_product\",\"get_product\"],\"durationMs\":10538,\"usage\":{\"inputTokens\":7448,\"outputTokens\":260,\"calls\":7}}",
+          "cost": 0.0008748000000000001,
+          "tokenUsage": {
+            "prompt": 7448,
+            "completion": 260,
+            "cached": 0,
+            "total": 7708,
+            "numRequests": 7,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "metadata": {
+            "scenarioId": "missing-feature",
+            "promptVersion": "shopping-v1"
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "description": "missing-feature",
+          "vars": {
+            "message": "Are the headphones waterproof?",
+            "scenarioId": "missing-feature"
+          },
+          "metadata": {
+            "group": "behavior",
+            "model": "gpt-6-luna",
+            "promptVersion": "shopping-v1"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "metric": "outcome"
+            },
+            {
+              "type": "javascript",
+              "metric": "cart"
+            },
+            {
+              "type": "javascript",
+              "metric": "persistence"
+            },
+            {
+              "type": "javascript",
+              "metric": "products"
+            },
+            {
+              "type": "javascript",
+              "metric": "missing_information"
+            }
+          ],
+          "options": {}
+        },
+        "testIdx": 1,
+        "tokenUsage": {
+          "prompt": 7448,
+          "completion": 260,
+          "cached": 0,
+          "total": 7708,
+          "numRequests": 7,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {
+          "message": "Are the headphones waterproof?",
+          "scenarioId": "missing-feature"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1",
+          "scenarioId": "missing-feature",
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0.0006477999999999999,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1,
+            "products": 1
+          },
+          "namedScoreWeights": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1,
+            "products": 1
+          },
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Outcome: completed",
+              "assertion": {
+                "type": "javascript",
+                "metric": "outcome",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Cart matches expected items and quantities",
+              "assertion": {
+                "type": "javascript",
+                "metric": "cart",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Persistence status and confirmation order are correct",
+              "assertion": {
+                "type": "javascript",
+                "metric": "persistence",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Response contains exactly the expected products",
+              "assertion": {
+                "type": "javascript",
+                "metric": "products",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            }
+          ]
+        },
+        "id": "83cc389c-a439-45b7-8eb4-60a8d027ee48",
+        "latencyMs": 8290,
+        "namedScores": {
+          "outcome": 1,
+          "cart": 1,
+          "persistence": 1,
+          "products": 1
+        },
+        "prompt": {
+          "raw": "Show all products.",
+          "label": "{{message}}",
+          "config": {}
+        },
+        "promptId": "21e536caf6f2870857967c9a82beb9093b792433e6d1deef3661148f3e61785b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "shopping:gpt-6-luna",
+          "label": "shopping:gpt-6-luna"
+        },
+        "response": {
+          "output": "{\"outcome\":\"completed\",\"cart\":{\"items\":[]},\"cartStatus\":\"unchanged\",\"productIds\":[\"11111111-1111-4111-8111-111111111111\",\"22222222-2222-4222-8222-222222222222\",\"33333333-3333-4333-8333-333333333333\",\"44444444-4444-4444-8444-444444444444\",\"55555555-5555-4555-8555-555555555555\",\"66666666-6666-4666-8666-666666666666\"],\"messages\":[\"Here are the matching products.\\n\\nArc Desk Lamp — $39.00. An adjustable reading lamp with a warm LED light and a matte finish. color: Sage; material: Aluminum; power: 8 W.\\n\\nLinen Table Lamp — $48.00. Soft ambient lighting with a natural linen shade and ceramic base. color: Sand; material: Ceramic.\\n\\nBlue Ceramic Mug — $18.00. A comfortable everyday mug, dishwasher safe, with a glazed blue finish. color: Blue; capacity: 350 ml.\\n\\nCloud Wireless Headphones — $89.00. Lightweight wireless headphones with noise isolation and USB-C charging. color: Black; battery: 30 hours; connectivity: Bluetooth.\\n\\nStudio Wireless Headphones — $129.00. Over-ear wireless headphones with active noise cancellation. color: Silver; battery: 40 hours; connectivity: Bluetooth.\\n\\nCanvas Everyday Tote — $24.00. A durable cotton canvas tote with an inside pocket. color: Natural; material: Cotton.\"],\"clarification\":null,\"prematureClaim\":false,\"committed\":false,\"error\":null,\"events\":[\"request.accepted\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"step.completed\",\"step.completed\",\"step.started\",\"tool.started\",\"tool.completed\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"assistant.message\",\"step.completed\",\"step.started\",\"request.completed\"],\"tools\":[\"search_products\"],\"durationMs\":8286,\"usage\":{\"inputTokens\":4838,\"outputTokens\":328,\"calls\":5}}",
+          "cost": 0.0006477999999999999,
+          "tokenUsage": {
+            "prompt": 4838,
+            "completion": 328,
+            "cached": 0,
+            "total": 5166,
+            "numRequests": 5,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "metadata": {
+            "scenarioId": "all-products",
+            "promptVersion": "shopping-v1"
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "description": "all-products",
+          "vars": {
+            "message": "Show all products.",
+            "scenarioId": "all-products"
+          },
+          "metadata": {
+            "group": "behavior",
+            "model": "gpt-6-luna",
+            "promptVersion": "shopping-v1"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "metric": "outcome"
+            },
+            {
+              "type": "javascript",
+              "metric": "cart"
+            },
+            {
+              "type": "javascript",
+              "metric": "persistence"
+            },
+            {
+              "type": "javascript",
+              "metric": "products"
+            }
+          ],
+          "options": {}
+        },
+        "testIdx": 2,
+        "tokenUsage": {
+          "prompt": 4838,
+          "completion": 328,
+          "cached": 0,
+          "total": 5166,
+          "numRequests": 5,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {
+          "message": "Show all products.",
+          "scenarioId": "all-products"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1",
+          "scenarioId": "all-products",
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0.0008907,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1
+          },
+          "namedScoreWeights": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1
+          },
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Outcome: completed",
+              "assertion": {
+                "type": "javascript",
+                "metric": "outcome",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Cart matches expected items and quantities",
+              "assertion": {
+                "type": "javascript",
+                "metric": "cart",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Persistence status and confirmation order are correct",
+              "assertion": {
+                "type": "javascript",
+                "metric": "persistence",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            }
+          ]
+        },
+        "id": "24176906-ed31-48f7-b526-a34f9d9986f8",
+        "latencyMs": 8766,
+        "namedScores": {
+          "outcome": 1,
+          "cart": 1,
+          "persistence": 1
+        },
+        "prompt": {
+          "raw": "Set the mug quantity to zero.",
+          "label": "{{message}}",
+          "config": {}
+        },
+        "promptId": "21e536caf6f2870857967c9a82beb9093b792433e6d1deef3661148f3e61785b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "shopping:gpt-6-luna",
+          "label": "shopping:gpt-6-luna"
+        },
+        "response": {
+          "output": "{\"outcome\":\"completed\",\"cart\":{\"items\":[]},\"cartStatus\":\"committed\",\"productIds\":[\"33333333-3333-4333-8333-333333333333\"],\"messages\":[\"Cart saved. 0 items, total $0.00.\\n\\nBlue Ceramic Mug — $18.00. A comfortable everyday mug, dishwasher safe, with a glazed blue finish. color: Blue; capacity: 350 ml.\"],\"clarification\":null,\"prematureClaim\":false,\"committed\":true,\"error\":null,\"events\":[\"request.accepted\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"step.completed\",\"step.completed\",\"step.started\",\"tool.started\",\"tool.completed\",\"tool.started\",\"tool.completed\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"cart.committed\",\"step.completed\",\"step.started\",\"assistant.message\",\"step.completed\",\"step.started\",\"request.completed\"],\"tools\":[\"search_products\",\"set_cart_quantity\"],\"durationMs\":8759,\"usage\":{\"inputTokens\":7937,\"outputTokens\":194,\"calls\":6}}",
+          "cost": 0.0008907,
+          "tokenUsage": {
+            "prompt": 7937,
+            "completion": 194,
+            "cached": 0,
+            "total": 8131,
+            "numRequests": 6,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "metadata": {
+            "scenarioId": "set-zero",
+            "promptVersion": "shopping-v1"
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "description": "set-zero",
+          "vars": {
+            "message": "Set the mug quantity to zero.",
+            "scenarioId": "set-zero"
+          },
+          "metadata": {
+            "group": "behavior",
+            "model": "gpt-6-luna",
+            "promptVersion": "shopping-v1"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "metric": "outcome"
+            },
+            {
+              "type": "javascript",
+              "metric": "cart"
+            },
+            {
+              "type": "javascript",
+              "metric": "persistence"
+            }
+          ],
+          "options": {}
+        },
+        "testIdx": 3,
+        "tokenUsage": {
+          "prompt": 7937,
+          "completion": 194,
+          "cached": 0,
+          "total": 8131,
+          "numRequests": 6,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {
+          "message": "Set the mug quantity to zero.",
+          "scenarioId": "set-zero"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1",
+          "scenarioId": "set-zero",
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0.00045440000000000004,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1,
+            "products": 1
+          },
+          "namedScoreWeights": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1,
+            "products": 1
+          },
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Outcome: completed",
+              "assertion": {
+                "type": "javascript",
+                "metric": "outcome",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Cart matches expected items and quantities",
+              "assertion": {
+                "type": "javascript",
+                "metric": "cart",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Persistence status and confirmation order are correct",
+              "assertion": {
+                "type": "javascript",
+                "metric": "persistence",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Response contains exactly the expected products",
+              "assertion": {
+                "type": "javascript",
+                "metric": "products",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            }
+          ]
+        },
+        "id": "f662aa3c-cacc-40e3-9478-04e87a6d0969",
+        "latencyMs": 8198,
+        "namedScores": {
+          "outcome": 1,
+          "cart": 1,
+          "persistence": 1,
+          "products": 1
+        },
+        "prompt": {
+          "raw": "Find lamps.",
+          "label": "{{message}}",
+          "config": {}
+        },
+        "promptId": "21e536caf6f2870857967c9a82beb9093b792433e6d1deef3661148f3e61785b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "shopping:gpt-6-luna",
+          "label": "shopping:gpt-6-luna"
+        },
+        "response": {
+          "output": "{\"outcome\":\"completed\",\"cart\":{\"items\":[]},\"cartStatus\":\"unchanged\",\"productIds\":[],\"messages\":[\"No matching products were found in your catalog.\"],\"clarification\":null,\"prematureClaim\":false,\"committed\":false,\"error\":null,\"events\":[\"request.accepted\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"step.completed\",\"step.completed\",\"step.started\",\"tool.started\",\"tool.completed\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"assistant.message\",\"step.completed\",\"step.started\",\"request.completed\"],\"tools\":[\"search_products\"],\"durationMs\":8193,\"usage\":{\"inputTokens\":3974,\"outputTokens\":114,\"calls\":5}}",
+          "cost": 0.00045440000000000004,
+          "tokenUsage": {
+            "prompt": 3974,
+            "completion": 114,
+            "cached": 0,
+            "total": 4088,
+            "numRequests": 5,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "metadata": {
+            "scenarioId": "empty-catalog-question",
+            "promptVersion": "shopping-v1"
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "description": "empty-catalog-question",
+          "vars": {
+            "message": "Find lamps.",
+            "scenarioId": "empty-catalog-question"
+          },
+          "metadata": {
+            "group": "behavior",
+            "model": "gpt-6-luna",
+            "promptVersion": "shopping-v1"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "metric": "outcome"
+            },
+            {
+              "type": "javascript",
+              "metric": "cart"
+            },
+            {
+              "type": "javascript",
+              "metric": "persistence"
+            },
+            {
+              "type": "javascript",
+              "metric": "products"
+            }
+          ],
+          "options": {}
+        },
+        "testIdx": 4,
+        "tokenUsage": {
+          "prompt": 3974,
+          "completion": 114,
+          "cached": 0,
+          "total": 4088,
+          "numRequests": 5,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {
+          "message": "Find lamps.",
+          "scenarioId": "empty-catalog-question"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1",
+          "scenarioId": "empty-catalog-question",
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      },
+      {
+        "cost": 0.0009564,
+        "gradingResult": {
+          "pass": true,
+          "score": 1,
+          "reason": "All assertions passed",
+          "namedScores": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1
+          },
+          "namedScoreWeights": {
+            "outcome": 1,
+            "cart": 1,
+            "persistence": 1
+          },
+          "tokensUsed": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0
+          },
+          "componentResults": [
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Outcome: completed",
+              "assertion": {
+                "type": "javascript",
+                "metric": "outcome",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Cart matches expected items and quantities",
+              "assertion": {
+                "type": "javascript",
+                "metric": "cart",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            },
+            {
+              "pass": true,
+              "score": 1,
+              "reason": "Persistence status and confirmation order are correct",
+              "assertion": {
+                "type": "javascript",
+                "metric": "persistence",
+                "value": "output=>check(shoppingResultSchema.parse(JSON.pars..."
+              }
+            }
+          ]
+        },
+        "id": "383a9a6b-14e8-4f30-bb3d-88a9e45dfb43",
+        "latencyMs": 7531,
+        "namedScores": {
+          "outcome": 1,
+          "cart": 1,
+          "persistence": 1
+        },
+        "prompt": {
+          "raw": "Cloud",
+          "label": "{{message}}",
+          "config": {}
+        },
+        "promptId": "21e536caf6f2870857967c9a82beb9093b792433e6d1deef3661148f3e61785b",
+        "promptIdx": 0,
+        "provider": {
+          "id": "shopping:gpt-6-luna",
+          "label": "shopping:gpt-6-luna"
+        },
+        "response": {
+          "output": "{\"outcome\":\"completed\",\"cart\":{\"items\":[{\"productId\":\"44444444-4444-4444-8444-444444444444\",\"quantity\":1}]},\"cartStatus\":\"committed\",\"productIds\":[\"44444444-4444-4444-8444-444444444444\"],\"messages\":[\"Cart saved. 1 item, total $89.00.\\n\\nCloud Wireless Headphones — $89.00. Lightweight wireless headphones with noise isolation and USB-C charging. color: Black; battery: 30 hours; connectivity: Bluetooth.\"],\"clarification\":null,\"prematureClaim\":false,\"committed\":true,\"error\":null,\"events\":[\"request.accepted\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"step.completed\",\"step.completed\",\"step.started\",\"tool.started\",\"tool.completed\",\"tool.started\",\"tool.completed\",\"step.completed\",\"step.started\",\"step.completed\",\"step.started\",\"cart.committed\",\"step.completed\",\"step.started\",\"assistant.message\",\"step.completed\",\"step.started\",\"request.completed\"],\"tools\":[\"get_product\",\"add_to_cart\"],\"durationMs\":7526,\"usage\":{\"inputTokens\":8599,\"outputTokens\":193,\"calls\":6}}",
+          "cost": 0.0009564,
+          "tokenUsage": {
+            "prompt": 8599,
+            "completion": 193,
+            "cached": 0,
+            "total": 8792,
+            "numRequests": 6,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            },
+            "assertions": {
+              "total": 0,
+              "prompt": 0,
+              "completion": 0,
+              "cached": 0,
+              "numRequests": 0,
+              "completionDetails": {
+                "reasoning": 0,
+                "acceptedPrediction": 0,
+                "rejectedPrediction": 0,
+                "cacheReadInputTokens": 0,
+                "cacheCreationInputTokens": 0
+              }
+            }
+          },
+          "metadata": {
+            "scenarioId": "pending-short-reply",
+            "promptVersion": "shopping-v1"
+          }
+        },
+        "score": 1,
+        "success": true,
+        "testCase": {
+          "description": "pending-short-reply",
+          "vars": {
+            "message": "Cloud",
+            "scenarioId": "pending-short-reply"
+          },
+          "metadata": {
+            "group": "behavior",
+            "model": "gpt-6-luna",
+            "promptVersion": "shopping-v1"
+          },
+          "assert": [
+            {
+              "type": "javascript",
+              "metric": "outcome"
+            },
+            {
+              "type": "javascript",
+              "metric": "cart"
+            },
+            {
+              "type": "javascript",
+              "metric": "persistence"
+            }
+          ],
+          "options": {}
+        },
+        "testIdx": 5,
+        "tokenUsage": {
+          "prompt": 8599,
+          "completion": 193,
+          "cached": 0,
+          "total": 8792,
+          "numRequests": 6,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          },
+          "assertions": {
+            "total": 0,
+            "prompt": 0,
+            "completion": 0,
+            "cached": 0,
+            "numRequests": 0,
+            "completionDetails": {
+              "reasoning": 0,
+              "acceptedPrediction": 0,
+              "rejectedPrediction": 0,
+              "cacheReadInputTokens": 0,
+              "cacheCreationInputTokens": 0
+            }
+          }
+        },
+        "vars": {
+          "message": "Cloud",
+          "scenarioId": "pending-short-reply"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1",
+          "scenarioId": "pending-short-reply",
+          "_promptfooFileMetadata": {}
+        },
+        "failureReason": 0
+      }
+    ],
+    "stats": {
+      "successes": 6,
+      "failures": 0,
+      "errors": 0,
+      "tokenUsage": {
+        "prompt": 36970,
+        "completion": 1244,
+        "cached": 0,
+        "total": 38214,
+        "numRequests": 34,
+        "completionDetails": {
+          "reasoning": 0,
+          "acceptedPrediction": 0,
+          "rejectedPrediction": 0,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "assertions": {
+          "total": 0,
+          "prompt": 0,
+          "completion": 0,
+          "cached": 0,
+          "numRequests": 0,
+          "completionDetails": {
+            "reasoning": 0,
+            "acceptedPrediction": 0,
+            "rejectedPrediction": 0,
+            "cacheReadInputTokens": 0,
+            "cacheCreationInputTokens": 0
+          }
+        }
+      },
+      "durationMs": 49651,
+      "evaluationDurationMs": 49651
+    }
+  },
+  "config": {
+    "description": "Shopping workflow (live; shopping-v1)",
+    "prompts": [
+      {
+        "raw": "{{message}}",
+        "label": "{{message}}"
+      }
+    ],
+    "providers": [
+      {
+        "id": "shopping:gpt-6-luna",
+        "label": "shopping:gpt-6-luna"
+      }
+    ],
+    "tests": [
+      {
+        "description": "price-filter",
+        "vars": {
+          "message": "Find wireless headphones under $100.",
+          "scenarioId": "price-filter"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "metric": "outcome"
+          },
+          {
+            "type": "javascript",
+            "metric": "cart"
+          },
+          {
+            "type": "javascript",
+            "metric": "persistence"
+          },
+          {
+            "type": "javascript",
+            "metric": "products"
+          }
+        ]
+      },
+      {
+        "description": "missing-feature",
+        "vars": {
+          "message": "Are the headphones waterproof?",
+          "scenarioId": "missing-feature"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "metric": "outcome"
+          },
+          {
+            "type": "javascript",
+            "metric": "cart"
+          },
+          {
+            "type": "javascript",
+            "metric": "persistence"
+          },
+          {
+            "type": "javascript",
+            "metric": "products"
+          },
+          {
+            "type": "javascript",
+            "metric": "missing_information"
+          }
+        ]
+      },
+      {
+        "description": "all-products",
+        "vars": {
+          "message": "Show all products.",
+          "scenarioId": "all-products"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "metric": "outcome"
+          },
+          {
+            "type": "javascript",
+            "metric": "cart"
+          },
+          {
+            "type": "javascript",
+            "metric": "persistence"
+          },
+          {
+            "type": "javascript",
+            "metric": "products"
+          }
+        ]
+      },
+      {
+        "description": "set-zero",
+        "vars": {
+          "message": "Set the mug quantity to zero.",
+          "scenarioId": "set-zero"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "metric": "outcome"
+          },
+          {
+            "type": "javascript",
+            "metric": "cart"
+          },
+          {
+            "type": "javascript",
+            "metric": "persistence"
+          }
+        ]
+      },
+      {
+        "description": "empty-catalog-question",
+        "vars": {
+          "message": "Find lamps.",
+          "scenarioId": "empty-catalog-question"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "metric": "outcome"
+          },
+          {
+            "type": "javascript",
+            "metric": "cart"
+          },
+          {
+            "type": "javascript",
+            "metric": "persistence"
+          },
+          {
+            "type": "javascript",
+            "metric": "products"
+          }
+        ]
+      },
+      {
+        "description": "pending-short-reply",
+        "vars": {
+          "message": "Cloud",
+          "scenarioId": "pending-short-reply"
+        },
+        "metadata": {
+          "group": "behavior",
+          "model": "gpt-6-luna",
+          "promptVersion": "shopping-v1"
+        },
+        "assert": [
+          {
+            "type": "javascript",
+            "metric": "outcome"
+          },
+          {
+            "type": "javascript",
+            "metric": "cart"
+          },
+          {
+            "type": "javascript",
+            "metric": "persistence"
+          }
+        ]
+      }
+    ],
+    "writeLatestResults": true,
+    "sharing": false,
+    "outputPath": "tests/evals/results/live-selected.json",
+    "basePath": "/Users/kirillsotnikov/projects/ai-agent-showcase"
+  },
+  "shareableUrl": null,
+  "metadata": {
+    "promptfooVersion": "0.125.1",
+    "nodeVersion": "v24.12.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "exportedAt": "2026-10-28T12:00:56.420Z",
+    "evaluationCreatedAt": "2026-10-28T12:00:06.735Z"
+  },
+  "vars": [
+    "message",
+    "scenarioId"
+  ]
+}

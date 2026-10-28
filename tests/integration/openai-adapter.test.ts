@@ -8,6 +8,7 @@ import { OpenAIProvider } from "../../packages/service/src/ai/llm/openai.js";
 import { FakeProvider } from "../../packages/service/src/ai/llm/fake.js";
 import type { Provider } from "../../packages/service/src/ai/llm/types.js";
 import { runWorkflow } from "../../packages/service/src/ai/orchestrator/workflow.js";
+import { ToolGateway } from "../../packages/service/src/ai/tools/gateway.js";
 import { readConfig } from "../../packages/service/src/config/index.js";
 import {
   initialState,
@@ -464,4 +465,83 @@ it("normalizes upstream errors without leaking provider payloads", async () => {
     message:
       "The model is unavailable. Check the server configuration and try again.",
   });
+});
+
+it("gives guard and router named clarification candidates without treating them as tool retrieval", async () => {
+  const server = Fastify();
+
+  servers.push(server);
+
+  const contexts: unknown[] = [];
+
+  server.post("/responses", async (request) => {
+    const body = request.body as {
+      model: string;
+      text: { format: { name: string } };
+      input: string;
+    };
+
+    contexts.push(JSON.parse(body.input));
+
+    return response(
+      body.text.format.name === "guard"
+        ? { verdict: "VALID" }
+        : { intent: "COMMAND", confidence: 1, clarification: null },
+      body.model,
+    );
+  });
+
+  await server.listen({ host: "127.0.0.1", port: 0 });
+
+  const address = server.server.address() as AddressInfo;
+
+  const provider = new OpenAIProvider(
+    readConfig({ OPENAI_API_KEY: "test-secret", OPENAI_MODEL: "test-model" }),
+    () => {},
+    new OpenAI({
+      apiKey: "test-secret",
+      baseURL: `http://127.0.0.1:${address.port}`,
+      maxRetries: 0,
+    }),
+  );
+
+  const snapshot = snapshotOf(initialState());
+
+  snapshot.pendingClarification = {
+    requestId: crypto.randomUUID(),
+    originalMessage: "Add the headphones.",
+    question: "Which headphones?",
+    candidateIds: [seedProducts[3].id, seedProducts[4].id],
+    baseRevision: 0,
+    expiresAt: new Date(Date.now() + 60000).toISOString(),
+  };
+
+  const context = { message: "Cloud", baseRevision: 0, snapshot };
+  const signal = new AbortController().signal;
+
+  await provider.guard(context, signal);
+  await provider.route(context, signal);
+
+  expect(contexts).toHaveLength(2);
+
+  for (const input of contexts)
+    expect(input).toMatchObject({
+      currentMessage: "Cloud",
+      pendingClarification: {
+        originalMessage: "Add the headphones.",
+        candidates: [
+          { id: seedProducts[3].id, name: seedProducts[3].name },
+          { id: seedProducts[4].id, name: seedProducts[4].name },
+        ],
+      },
+      catalogCategories: ["Lighting", "Kitchen", "Audio", "Accessories"],
+    });
+
+  const gateway = new ToolGateway("action", snapshot, 12, signal, () => {});
+
+  await expect(
+    gateway.call("add_to_cart", { productId: seedProducts[3].id, quantity: 1 }),
+  ).rejects.toThrow("Retrieve a product");
+
+  expect(snapshot.pendingClarification).not.toHaveProperty("candidates");
 });

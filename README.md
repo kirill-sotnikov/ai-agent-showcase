@@ -41,8 +41,9 @@ Use the exact model name you intend to evaluate. Every role uses `OPENAI_MODEL`;
 | `yarn format:check`  | Check Prettier formatting                                             |
 | `yarn test`          | Unit tests and real HTTP/WebSocket integration tests                  |
 | `yarn test:e2e`      | Chromium browser scenarios; builds and starts an isolated fake server |
-| `yarn eval:fake`     | Run the 34-case deterministic evaluation dataset                      |
-| `yarn eval:live`     | Run explicitly budgeted live OpenAI evaluations                       |
+| `yarn eval:fake`     | Run 34 deterministic scenarios through Promptfoo                      |
+| `yarn eval:live`     | Run budgeted live OpenAI scenarios through Promptfoo                  |
+| `yarn eval:view`     | Open the local Promptfoo UI with evaluation history                   |
 | `yarn check`         | Typecheck, lint, unit/integration tests, build                        |
 
 Install the browser once with `yarn playwright install chromium`. On Linux use `yarn playwright install --with-deps chromium`.
@@ -132,7 +133,16 @@ Smoke test: `/health` → `/ready` → connect to `/ws` → search → add a uni
 
 ## Evaluations and delivery status
 
-The dataset at `tests/evals/datasets/shopping-v1.json` covers 34 cases: retrieval, prices, mixed actions, repeated adds, remove/set, ambiguity, short clarification, missing specs, empty catalogs, injection data, invalid routing, provider failure, commit rejection and composer failure. Deterministic evaluation reports go to `tests/evals/results/fake-latest.json`. These results measure fixture behavior and invariants; they are not evidence of real model accuracy.
+Evaluations use **Promptfoo 0.125.1** through its TypeScript SDK. No YAML configuration is required. Run `yarn eval:fake` for the 34 deterministic scenarios, then `yarn eval:view` to inspect results and compare saved runs in the local UI (port 15500). Evaluation history, logs and the database live in the ignored `.promptfoo/` directory; telemetry and update checks are disabled by the project commands. Reports also export to `tests/evals/results/fake-latest.json` and `live-latest.json` in Promptfoo's native format. These results measure fixture behavior and invariants; fake runs are not evidence of real model accuracy.
+
+The evaluation sources are:
+
+- `tests/evals/datasets/shopping-v1.ts`: typed inputs, initial cart/clarification fixtures, fault injection and expected results. Add or edit scenarios here.
+- `tests/evals/harness.ts`: an adapter that creates fresh state and a provider per scenario, runs the real workflow, and collects the cart, rendered product IDs, messages, errors, tool names, timings and token usage.
+- `tests/evals/assertions.ts`: reusable TypeScript assertion functions with named metrics and failure explanations. They check outcome, exact cart contents, persistence status and confirmation order, clarification questions, expected search results, missing specifications and error codes. No LLM judge is used.
+- `tests/evals/suite.ts`: Promptfoo provider and test configuration. Cases are tagged as `behavior` or `resilience` (injected faults), with model and prompt version metadata.
+
+The scenarios cover retrieval, prices, mixed actions, repeated adds, remove/set, ambiguity, short clarification, missing specs, empty catalogs, injection data, invalid routing, provider failure, commit rejection and composer failure. Calls run sequentially with caching disabled so each evaluation executes the workflow again. A failed assertion or execution error makes the command exit nonzero. Rerun evaluations using the project commands; inline TypeScript functions are not replayable from the exported JSON alone.
 
 Live evaluations require server credentials and explicit cost parameters:
 
@@ -143,7 +153,13 @@ EVAL_INPUT_USD_PER_MILLION=verified-model-input-price
 EVAL_OUTPUT_USD_PER_MILLION=verified-model-output-price
 ```
 
-Run `yarn eval:live`. It records the configured model, prompt version, usage, estimated cost, outcomes and timings in `tests/evals/results/live-latest.json`. Cost reservation is conservative and may skip cases; increase the explicit budget only after reviewing the model's actual prices. Missing credentials produce an explicit skipped report. No live evaluation has been run as part of this implementation because server credentials and a chosen model were not supplied.
+Set these numeric values in `.env` alongside `OPENAI_API_KEY` and `OPENAI_MODEL`, then run `yarn eval:live`. Prices are USD per million tokens, such as `0.1`, without a dollar sign. `EVAL_MAX_CASES` defaults to 5 and selects the first cases (up to 50; the current dataset has 34). For a one-case smoke run use `EVAL_MAX_CASES=1 yarn eval:live`. The server and frontend do not need to be running.
+
+To rerun specific scenarios, pass comma-separated IDs, for example `yarn eval:live --cases price-filter,set-zero,pending-short-reply`. Unknown or empty IDs fail before any model calls. The case limit and cost budget still apply to the selected scenarios. Filtered runs export to `tests/evals/results/live-selected.json` (or `fake-selected.json`) so the full-run report stays available. Use `--output path/to/report.json` to choose a different report path.
+
+The adapter reports total workflow token usage and estimated cost to Promptfoo. The existing conservative budget check reserves `MAX_LLM_CALLS × (1,048,576 × inputPrice + MAX_OUTPUT_TOKENS × outputPrice) / 1,000,000` USD before each scenario, in addition to previously recorded cost. This is a reservation, not an expected bill. A budget-blocked scenario appears as a Promptfoo execution error with `metadata.skipped=true` and does not call the model. Missing credentials write an explicit skipped report. Both conditions exit nonzero. Review your model's prices before increasing the budget; cost estimates use the configured input/output rates and do not model every billing adjustment.
+
+The migration was verified with the fake provider and local regression tests; no paid live evaluation was run during migration.
 
 All verification commands run locally through Yarn. No GitHub Actions or GitHub CI/CD configuration is included. Set release quality and cost thresholds after a measured live baseline; no real-model accuracy claim has been made.
 

@@ -95,10 +95,8 @@ export const panelHeading = style({
 
 export const eyebrow = style({
   fontSize: vars.minimumFontSize,
-  letterSpacing: "1.5px",
   fontWeight: 600,
   color: "#8f998d",
-  textTransform: "uppercase",
   lineHeight: 1.5,
 });
 

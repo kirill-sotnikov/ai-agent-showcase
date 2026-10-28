@@ -13,7 +13,7 @@ import { guardPrompt } from "../prompts/v1/guard.js";
 import { knowledgePrompt } from "../prompts/v1/knowledge.js";
 import { routerPrompt } from "../prompts/v1/router.js";
 import { sharedPolicy } from "../prompts/v1/shared.js";
-import type { ToolGateway } from "../tools/gateway.js";
+import type { GatewayTool, ToolGateway } from "../tools/gateway.js";
 import {
   agentResultSchema,
   guardResultSchema,
@@ -29,6 +29,23 @@ export interface Usage {
   outputTokens: number;
   calls: number;
 }
+
+const toolDescriptions: Record<GatewayTool, string> = {
+  search_products:
+    'Search catalog text using AND-matched keywords only, not a sentence. Every query token must occur in the product. Use query "" for all products. category is an exact catalog category from catalogCategories, or null; do not guess a category from a product type. maxPriceMinor is an integer USD cents cap ($100 = 10000), or null; keep price wording out of query. Use limit 10. Empty results are a valid completed search.',
+  get_product:
+    "Retrieve a catalog product by ID. Required before any cart mutation, even when its ID and name are already in cart or pendingClarification context.",
+  get_cart: "Read the current draft cart and total in USD cents.",
+  choose_cheapest:
+    "Select the cheapest retrieved product by price in application code.",
+  add_to_cart:
+    "Add units to the draft cart. First retrieve the product with search_products or get_product; context alone does not count as retrieval.",
+  set_cart_quantity:
+    "Set the total quantity in the draft cart; zero removes the line. First retrieve the product with search_products or get_product, including for a product already in the cart.",
+  remove_from_cart:
+    "Remove units from the draft cart, or the whole line when quantity is null. First retrieve the product with search_products or get_product.",
+};
+
 export class OpenAIProvider implements Provider {
   private readonly client: OpenAI;
 
@@ -63,13 +80,22 @@ export class OpenAIProvider implements Provider {
   }
 
   private context(context: AgentContext) {
+    const pending = context.snapshot.pendingClarification;
+
     // All customization and history are data within a user envelope, never trusted instructions.
     return JSON.stringify({
       currentMessage: context.message,
       baseRevision: context.baseRevision,
       customIdentity: context.snapshot.settings.agentIdentity,
       conversation: context.snapshot.messages.slice(-20),
-      pendingClarification: context.snapshot.pendingClarification,
+      pendingClarification: pending
+        ? {
+            ...pending,
+            candidates: context.snapshot.products
+              .filter((product) => pending.candidateIds.includes(product.id))
+              .map(({ id, name }) => ({ id, name })),
+          }
+        : null,
       cart: {
         items: context.snapshot.cart.items.map((item) => ({
           ...item,
@@ -79,6 +105,11 @@ export class OpenAIProvider implements Provider {
         })),
       },
       productCount: context.snapshot.products.length,
+      catalogCategories: [
+        ...new Set(
+          context.snapshot.products.map((product) => product.category),
+        ),
+      ],
     });
   }
 
@@ -216,10 +247,7 @@ export class OpenAIProvider implements Provider {
     const tools = gateway.availableTools().map(([name, schema]) =>
       zodResponsesFunction({
         name,
-        description:
-          name === "choose_cheapest"
-            ? "Select the cheapest retrieved product by price in application code."
-            : name.replaceAll("_", " "),
+        description: toolDescriptions[name as GatewayTool],
         parameters: schema,
       }),
     );

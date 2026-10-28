@@ -13,3 +13,5 @@ yarn.lock
 # Browser artifacts
 test-results/
 playwright-report/
+.promptfoo/
+tests/evals/results/
