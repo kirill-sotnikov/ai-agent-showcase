@@ -1,13 +1,13 @@
-import * as styles from "../../styles.css";
-import { useState } from "react";
 import type { PersistedState, Product } from "@shop/shared/contracts";
 import { DEFAULT_IDENTITY } from "@shop/shared/defaults";
 import { formatMoney } from "@shop/shared/money";
+import { useState } from "react";
+import * as styles from "../../styles.css";
+import { text } from "../../ui/text";
 import { useWorkspaceClient } from "../../workspace";
+import { ProductForm } from "../catalog/product-form";
 import { Icon } from "../ui/icon";
 import { ProductTile } from "../ui/product-tile";
-import { ProductForm } from "../catalog/product-form";
-import { text } from "../../ui/text";
 
 export function Settings({
   state,
@@ -26,9 +26,7 @@ export function Settings({
   return (
     <main className={styles.settingsPage}>
       <div className={styles.settingsTitle}>
-        <span className={styles.eyebrow}>MAKE IT YOURS</span>
         <h1>{text.settings}</h1>
-        <p>Shape your assistant. Curate your catalog.</p>
       </div>
       {disabled && (
         <p className={styles.notice} role="status">
@@ -37,7 +35,6 @@ export function Settings({
       )}
       <section className={`${styles.settingsCard} ${styles.identityCard}`}>
         <div>
-          <span className={styles.sectionNumber}>01</span>
           <h2>{text.identityTitle}</h2>
           <p>{text.identityHelp}</p>
         </div>
@@ -78,7 +75,6 @@ export function Settings({
       <section className={`${styles.settingsCard} ${styles.catalogCard}`}>
         <div className={styles.catalogHeader}>
           <div>
-            <span className={styles.sectionNumber}>02</span>
             <h2>
               {text.products}
               <span className={styles.count}>{state.products.length}</span>

@@ -1,10 +1,10 @@
-import * as styles from "../../styles.css";
+import type { PersistedState } from "@shop/shared/contracts";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import type { PersistedState } from "@shop/shared/contracts";
+import * as styles from "../../styles.css";
+import { statuses, text } from "../../ui/text";
 import { useWorkspaceClient } from "../../workspace";
 import { Icon } from "../ui/icon";
-import { statuses, text } from "../../ui/text";
 
 export function Chat({
   state,
@@ -44,7 +44,6 @@ export function Chat({
             <div className={styles.welcomeIcon}>
               <Icon name="spark" size={33} />
             </div>
-            <span className={styles.eyebrow}>A THOUGHTFUL WAY TO SHOP</span>
             <h2>{text.welcome}</h2>
             <p>{text.welcomeBody}</p>
             <div className={styles.suggestions}>

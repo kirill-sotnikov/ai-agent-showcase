@@ -8,7 +8,7 @@ import { WorkspaceProvider } from "../workspace";
 export const metadata: Metadata = {
   title: "AI Agent",
   description:
-    "Your personal shopping assistant with a local catalog and verified cart changes.",
+    "AI Agent showcase - Your personal shopping assistant",
 };
 
 export const viewport: Viewport = { themeColor: "#f5f4ef" };

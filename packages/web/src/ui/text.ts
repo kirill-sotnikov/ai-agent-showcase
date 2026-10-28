@@ -1,9 +1,9 @@
 export const text = {
-  brand: "AI Assistance",
+  brand: "AI Agent",
   subtitle: "A little help finding the right thing.",
-  assistant: "Assistant",
+  assistant: "Agent",
   settings: "Settings",
-  welcome: "How can I help you shop today?",
+  welcome: "Hi! I'm your shopping agent",
   welcomeBody:
     "Explore your catalog, compare the details, or let me put a cart together for you.",
   input: "Ask about products or build your cart...",
