@@ -2771,6 +2771,7 @@ __metadata:
   dependencies:
     "@fastify/websocket": "npm:11.3.4"
     "@shop/shared": "workspace:*"
+    esbuild: "npm:0.28.2"
     fastify: "npm:5.12.7"
     openai: "npm:7.43.0"
     ws: "npm:8.21.0"

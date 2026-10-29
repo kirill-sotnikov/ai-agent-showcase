@@ -15,10 +15,16 @@ const config: NextConfig = {
     return config;
   },
   async rewrites() {
-    return ["/ws", "/health", "/ready", "/api/visitors/new"].map((source) => ({
-      source,
-      destination: `${serviceUrl}${source}`,
-    }));
+    return [
+      ...["/ws", "/health", "/ready"].map((source) => ({
+        source,
+        destination: `${serviceUrl}${source}`,
+      })),
+      {
+        source: "/api/visitors/new",
+        destination: `${serviceUrl}/visitors/new`,
+      },
+    ];
   },
   async headers() {
     return [

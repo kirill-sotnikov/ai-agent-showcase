@@ -63,7 +63,7 @@ export function createServer(
     return reply.code(status.ready ? 200 : 503).send(status);
   });
 
-  server.post("/api/visitors/new", async (request, reply) => {
+  server.post("/visitors/new", async (request, reply) => {
     if (!request.headers.origin || !origins.has(request.headers.origin))
       return reply.code(403).send({ error: "Origin is not allowed." });
 

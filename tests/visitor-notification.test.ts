@@ -141,7 +141,7 @@ describe("visitor notification endpoint", () => {
     try {
       return await server.inject({
         method: "POST",
-        url: "/api/visitors/new",
+        url: "/visitors/new",
         headers: { origin: options.origin ?? "http://test.local" },
         payload: options.payload ?? { occurredAt },
       });
