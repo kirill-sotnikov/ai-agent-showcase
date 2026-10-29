@@ -32,9 +32,9 @@ export interface Usage {
 
 const toolDescriptions: Record<GatewayTool, string> = {
   search_products:
-    'Search catalog text using AND-matched keywords only, not a sentence. Every query token must occur in the product. Use query "" for all products. category is an exact catalog category from catalogCategories, or null; do not guess a category from a product type. maxPriceMinor is an integer USD cents cap ($100 = 10000), or null; keep price wording out of query. Use limit 10. Empty results are a valid completed search.',
+    'Search catalog text using AND-matched keywords only, not a sentence. Every query token must occur in the product. Use query "" for all products. category is an exact catalog category from catalogCategories, or null; do not guess a category from a product type. maxPriceMinor is an integer USD cents cap ($100 = 10000), or null; keep price wording out of query. Use limit 10. Returns full product records, which count as retrieval for comparisons and cart mutations in this request; do not call get_product for these products. Empty results are a valid completed search.',
   get_product:
-    "Retrieve a catalog product by ID. Required before any cart mutation, even when its ID and name are already in cart or pendingClarification context.",
+    "Retrieve a catalog product by ID only if it has not already been returned by search_products or get_product in this request. Both tools return full product records; reuse them without another read. IDs and names in cart, conversation or pendingClarification context alone do not count as retrieval.",
   get_cart: "Read the current draft cart and total in USD cents.",
   choose_cheapest:
     "Select the cheapest retrieved product by price in application code.",

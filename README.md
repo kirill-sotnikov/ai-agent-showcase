@@ -20,14 +20,16 @@ The browser connects to Next.js, which proxies WebSocket requests to Fastify. Th
 
 ### AI Agent
 
-The orchestrator invokes roles sequentially, each with its own prompt. All roles use the model configured in `OPENAI_MODEL`.
+The orchestrator starts Guard and Router in parallel, each with its own prompt. Shopping tools run only after Guard allows the request and Router returns a valid route. Spam or a failed Guard check cancels pending routing; speculative routing errors cannot override a spam verdict. All roles use the model configured in `OPENAI_MODEL`.
 
 ```mermaid
 flowchart TD
     Request[User message] --> Guard[Guard: request screening]
-    Guard --> Router[Router: intent detection]
-    Router --> Knowledge[Knowledge: product questions]
-    Router --> Action[Action: commands and mixed requests]
+    Request --> Router[Router: intent detection]
+    Guard --> Gate{Guard allows and route is valid}
+    Router --> Gate
+    Gate --> Knowledge[Knowledge: product questions]
+    Gate --> Action[Action: commands and mixed requests]
     Knowledge --> ReadTools[Read catalog and cart]
     Action --> CartTools[Search and update cart draft]
     ReadTools --> Validation[Validate result]

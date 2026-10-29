@@ -79,6 +79,12 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
 
   const bodies: Record<string, unknown>[] = [];
 
+  let allowGuard!: () => void;
+
+  const routingStarted = new Promise<void>((resolve) => {
+    allowGuard = resolve;
+  });
+
   let toolRound = 0;
 
   server.post("/responses", async (request, reply) => {
@@ -100,11 +106,15 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
 
     switch (body.text.format.name) {
       case "guard":
+        // The SDK must start routing while Guard is still awaiting a response.
+        await routingStarted;
         output = response({ verdict: "VALID" }, body.model);
 
         break;
 
       case "route":
+        allowGuard();
+
         output = response(
           { intent: "MIXED", confidence: 1, clarification: null },
           body.model,

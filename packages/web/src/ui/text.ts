@@ -66,7 +66,6 @@ export const text = {
   examples: [
     "Find a lamp under $50 and add the cheapest one.",
     "Find wireless headphones under $100.",
-    "Add two of the blue mugs.",
   ],
 } as const;
 export const statuses: Record<string, string> = {

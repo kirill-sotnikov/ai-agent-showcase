@@ -52,7 +52,7 @@ export function Chat({
                 <button key={example} onClick={() => setDraft(example)}>
                   <span>
                     {
-                      ["Find & add", "Explore products", "Build your cart"][
+                      ["Find & add", "Explore products"][
                         index
                       ]
                     }

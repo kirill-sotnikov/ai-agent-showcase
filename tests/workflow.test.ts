@@ -5,7 +5,7 @@ import type {
   Proposal,
   ServerEvent,
 } from "@shop/shared/contracts";
-import { commitSummary } from "@shop/shared/domain";
+import { commitSummary, DomainError } from "@shop/shared/domain";
 import { seedProducts } from "@shop/shared/defaults";
 import { readConfig, readiness } from "../packages/service/src/config/index.js";
 import { FakeProvider } from "../packages/service/src/ai/llm/fake.js";
@@ -13,7 +13,10 @@ import type {
   AgentContext,
   Provider,
 } from "../packages/service/src/ai/llm/types.js";
-import { runWorkflow } from "../packages/service/src/ai/orchestrator/workflow.js";
+import {
+  runWorkflow,
+  type WorkflowOptions,
+} from "../packages/service/src/ai/orchestrator/workflow.js";
 import { ToolGateway } from "../packages/service/src/ai/tools/gateway.js";
 import { initialState, snapshotOf } from "../packages/web/src/storage/store.js";
 
@@ -21,6 +24,7 @@ async function execute(
   message: string,
   provider: Provider = new FakeProvider(),
   mutate?: (snapshot: ReturnType<typeof snapshotOf>) => void,
+  options: Partial<Pick<WorkflowOptions, "signal" | "emit">> = {},
 ) {
   const snapshot = snapshotOf(initialState());
 
@@ -31,10 +35,11 @@ async function execute(
 
   await runWorkflow({ message, baseRevision: 0, snapshot }, provider, {
     requestId: crypto.randomUUID(),
-    signal: new AbortController().signal,
+    signal: options.signal ?? new AbortController().signal,
     maxToolCalls: 12,
     emit: (type, payload) => {
       events.push({ type, payload });
+      options.emit?.(type, payload);
     },
     commit: async (proposal) => {
       proposals.push(proposal);
@@ -53,7 +58,99 @@ async function execute(
   return { events, proposals };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+
+  const promise = new Promise<T>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+
+  return { promise, resolve, reject };
+}
+
 describe("controlled workflow", () => {
+  it.each(["guard", "router"] as const)(
+    "starts both checks together and waits for both when %s finishes first",
+    async (first) => {
+      const guard = deferred<Awaited<ReturnType<Provider["guard"]>>>();
+      const route = deferred<Awaited<ReturnType<Provider["route"]>>>();
+      const provider: Provider = new FakeProvider();
+      const completed: string[] = [];
+
+      provider.guard = vi.fn(() => guard.promise);
+      provider.route = vi.fn(() => route.promise);
+      provider.execute = vi.fn(provider.execute);
+
+      const running = execute("Add the Blue Ceramic Mug", provider, undefined, {
+        emit: (type, payload) => {
+          if (type === "step.completed" && "agent" in payload && payload.agent)
+            completed.push(payload.agent);
+        },
+      });
+
+      await vi.waitFor(() => {
+        expect(provider.guard).toHaveBeenCalledOnce();
+        expect(provider.route).toHaveBeenCalledOnce();
+      });
+
+      const resolveGuard = () => guard.resolve({ verdict: "VALID" });
+
+      const resolveRoute = () =>
+        route.resolve({
+          intent: "COMMAND",
+          confidence: 1,
+          clarification: null,
+        });
+
+      (first === "guard" ? resolveGuard : resolveRoute)();
+
+      await vi.waitFor(() => expect(completed).toContain(first));
+
+      expect(provider.execute).not.toHaveBeenCalled();
+      (first === "guard" ? resolveRoute : resolveGuard)();
+
+      const result = await running;
+
+      expect(result.proposals).toHaveLength(1);
+      expect(provider.execute).toHaveBeenCalledOnce();
+
+      const guardFinished = result.events.findIndex(
+        (event) =>
+          event.type === "step.completed" &&
+          "agent" in event.payload &&
+          event.payload.agent === "guard",
+      );
+
+      expect(
+        result.events.findIndex(
+          (event) =>
+            event.type === "step.started" &&
+            "agent" in event.payload &&
+            event.payload.agent === "router",
+        ),
+      ).toBeLessThan(guardFinished);
+
+      for (const agent of ["guard", "router"])
+        expect(
+          result.events.filter(
+            (event) =>
+              event.type === "step.completed" &&
+              "agent" in event.payload &&
+              event.payload.agent === agent,
+          ),
+        ).toEqual([
+          {
+            type: "step.completed",
+            payload: expect.objectContaining({
+              durationMs: expect.any(Number),
+            }),
+          },
+        ]);
+    },
+  );
+
   it("searches, selects cheapest, validates, commits and only then confirms", async () => {
     const { events, proposals } = await execute(
       "Find a lamp under $50 and add the cheapest one.",
@@ -251,16 +348,22 @@ describe("controlled workflow", () => {
     });
   });
 
-  it("still stops spam before routing and records the guard verdict", async () => {
+  it("cancels speculative routing on spam without running tools or waiting for the provider", async () => {
     const provider: Provider = new FakeProvider();
+    const route = deferred<Awaited<ReturnType<Provider["route"]>>>();
 
     provider.guard = async () => ({ verdict: "SPAM" });
-    provider.route = vi.fn(provider.route);
+    provider.route = vi.fn(() => route.promise);
+    provider.execute = vi.fn(provider.execute);
+    provider.present = vi.fn(provider.present);
 
     const result = await execute("spam", provider);
 
     expect(result.proposals).toHaveLength(0);
-    expect(provider.route).not.toHaveBeenCalled();
+    expect(provider.route).toHaveBeenCalledOnce();
+    expect(vi.mocked(provider.route).mock.calls[0][1].aborted).toBe(true);
+    expect(provider.execute).not.toHaveBeenCalled();
+    expect(provider.present).not.toHaveBeenCalled();
 
     expect(result.events).toContainEqual({
       type: "step.completed",
@@ -275,6 +378,148 @@ describe("controlled workflow", () => {
       type: "request.completed",
       payload: { agent: "guard", outcome: "clarification" },
     });
+
+    // Even a provider that ignores abort must not emit late events or leave an
+    // unhandled rejection after the workflow has returned its spam response.
+    const eventCount = result.events.length;
+
+    route.reject(new Error("Late routing failure"));
+    await route.promise.catch(() => {});
+    expect(result.events).toHaveLength(eventCount);
+  });
+
+  it.each(["VALID", "SPAM"] as const)(
+    "observes an early router failure and defers to the %s guard verdict",
+    async (verdict) => {
+      const guard = deferred<Awaited<ReturnType<Provider["guard"]>>>();
+      const provider: Provider = new FakeProvider();
+
+      let routingStopped = false;
+
+      provider.guard = vi.fn(() => guard.promise);
+
+      provider.route = vi.fn(async () => {
+        throw new DomainError("MODEL_UNAVAILABLE", "Routing failed.");
+      });
+
+      provider.execute = vi.fn(provider.execute);
+
+      const running = execute("Add the Blue Ceramic Mug", provider, undefined, {
+        emit: (type, payload) => {
+          if (
+            type === "step.completed" &&
+            "agent" in payload &&
+            payload.agent === "router"
+          )
+            routingStopped = true;
+        },
+      });
+
+      await vi.waitFor(() => expect(routingStopped).toBe(true));
+
+      expect(provider.execute).not.toHaveBeenCalled();
+      guard.resolve({ verdict });
+
+      const result = await running;
+
+      expect(result.proposals).toHaveLength(0);
+      expect(provider.execute).not.toHaveBeenCalled();
+
+      expect(result.events.at(-1)).toMatchObject({
+        type: verdict === "SPAM" ? "request.completed" : "request.failed",
+        payload: {
+          agent: verdict === "SPAM" ? "guard" : "router",
+          outcome: verdict === "SPAM" ? "clarification" : "failed",
+        },
+      });
+    },
+  );
+
+  it.each(["failure", "malformed", "cancelled"] as const)(
+    "stops both pending checks on guard %s without tools or a commit",
+    async (failure) => {
+      const guard = deferred<Awaited<ReturnType<Provider["guard"]>>>();
+      const route = deferred<Awaited<ReturnType<Provider["route"]>>>();
+      const controller = new AbortController();
+      const provider: Provider = new FakeProvider();
+
+      provider.guard = vi.fn(() => guard.promise);
+      provider.route = vi.fn(() => route.promise);
+      provider.execute = vi.fn(provider.execute);
+
+      const running = execute("Add the Blue Ceramic Mug", provider, undefined, {
+        signal: controller.signal,
+      });
+
+      await vi.waitFor(() => expect(provider.route).toHaveBeenCalledOnce());
+
+      if (failure === "failure")
+        guard.reject(new DomainError("MODEL_UNAVAILABLE", "Guard failed."));
+      else if (failure === "malformed")
+        guard.resolve({ verdict: "INVENTED" } as never);
+      else controller.abort(new DomainError("CANCELLED", "Request cancelled."));
+
+      const result = await running;
+
+      expect(vi.mocked(provider.guard).mock.calls[0][1].aborted).toBe(true);
+      expect(vi.mocked(provider.route).mock.calls[0][1].aborted).toBe(true);
+      expect(provider.execute).not.toHaveBeenCalled();
+      expect(result.proposals).toHaveLength(0);
+
+      expect(result.events.at(-1)).toMatchObject({
+        type: failure === "cancelled" ? "request.cancelled" : "request.failed",
+        payload: { cartStatus: "unchanged" },
+      });
+
+      const eventCount = result.events.length;
+
+      guard.resolve({ verdict: "VALID" });
+      route.resolve({ intent: "COMMAND", confidence: 1, clarification: null });
+      await Promise.all([guard.promise.catch(() => {}), route.promise]);
+      expect(result.events).toHaveLength(eventCount);
+    },
+  );
+
+  it("reuses a searched product for multiple mutations while rejecting context-only IDs", async () => {
+    const snapshot = snapshotOf(initialState());
+
+    snapshot.cart.items.push({ productId: seedProducts[2].id, quantity: 1 });
+
+    const gateway = new ToolGateway(
+      "action",
+      snapshot,
+      4,
+      new AbortController().signal,
+      () => {},
+    );
+
+    await expect(
+      gateway.call("add_to_cart", {
+        productId: seedProducts[2].id,
+        quantity: 1,
+      }),
+    ).rejects.toThrow("Retrieve a product");
+
+    await gateway.call("search_products", {
+      query: "blue mug",
+      category: null,
+      maxPriceMinor: null,
+      limit: 10,
+    });
+
+    await gateway.call("add_to_cart", {
+      productId: seedProducts[2].id,
+      quantity: 1,
+    });
+
+    await gateway.call("set_cart_quantity", {
+      productId: seedProducts[2].id,
+      quantity: 3,
+    });
+
+    expect(gateway.draft.cart.items).toEqual([
+      { productId: seedProducts[2].id, quantity: 3 },
+    ]);
   });
 
   it("resolves a short reply from pending clarification", async () => {

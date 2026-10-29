@@ -5,6 +5,7 @@ import {
   routeResultSchema,
   type AgentContext,
   type Provider,
+  type Route,
 } from "../llm/types.js";
 import {
   type CommitReceipt,
@@ -107,8 +108,67 @@ export async function runWorkflow(
   let stage: RunStage = "accepted";
   let agent: WorkflowAgent = "orchestrator";
   let receipt: CommitReceipt | null = null;
-  let stepStarted = performance.now();
-  let stepDetails: SafeDetails | undefined;
+
+  const checks = new AbortController();
+  const checkSignal = AbortSignal.any([signal, checks.signal]);
+
+  let routing: Promise<{ route: Route } | { error: unknown }> | undefined;
+
+  const steps = new Map<
+    RunStage,
+    {
+      agent: WorkflowAgent;
+      label: string;
+      startedAt: number;
+      completed: boolean;
+    }
+  >([
+    [
+      "accepted",
+      {
+        agent,
+        label: "Request received",
+        startedAt: performance.now(),
+        completed: false,
+      },
+    ],
+  ]);
+
+  const startStep = (
+    next: RunStage,
+    label: string,
+    nextAgent: WorkflowAgent,
+  ) => {
+    if (steps.has(next)) return;
+
+    steps.set(next, {
+      agent: nextAgent,
+      label,
+      startedAt: performance.now(),
+      completed: false,
+    });
+
+    emit("step.started", { stage: next, agent: nextAgent, label });
+  };
+
+  const finishStep = (
+    current: RunStage,
+    label?: string,
+    details?: SafeDetails,
+  ) => {
+    const step = steps.get(current);
+
+    if (!step || step.completed) return;
+    step.completed = true;
+
+    emit("step.completed", {
+      stage: current,
+      agent: step.agent,
+      label: label ?? step.label,
+      durationMs: performance.now() - step.startedAt,
+      ...(details ? { details } : {}),
+    });
+  };
 
   const move = (
     next: RunStage,
@@ -119,19 +179,11 @@ export async function runWorkflow(
     if (!transitions[stage]?.includes(next))
       throw new DomainError("INVALID_REQUEST", "Invalid request transition.");
 
-    emit("step.completed", {
-      stage,
-      agent,
-      label: labels[stage] ?? "Request received",
-      durationMs: performance.now() - stepStarted,
-      ...(stepDetails ? { details: stepDetails } : {}),
-    });
+    finishStep(stage);
 
     stage = next;
     agent = nextAgent;
-    stepStarted = performance.now();
-    stepDetails = undefined;
-    emit("step.started", { stage, agent, label });
+    startStep(stage, label, agent);
   };
 
   const message = (content: string) =>
@@ -165,16 +217,43 @@ export async function runWorkflow(
   try {
     emit("request.accepted", {});
     move("checking", "Checking request", "guard");
+    startStep("routing", "Understanding intent", "router");
 
-    const guard = guardResultSchema.parse(
-      await abortable(provider.guard(context, signal), signal),
+    // Routing is speculative and has no tools. Observe rejection immediately,
+    // but use its result only after Guard has allowed the request to continue.
+    routing = abortable(
+      Promise.resolve()
+        .then(() => {
+          checkSignal.throwIfAborted();
+
+          return provider.route(context, checkSignal);
+        })
+        .then((result) => routeResultSchema.parse(result)),
+      checkSignal,
+    ).then(
+      (route) => {
+        finishStep("routing", "Intent identified", { route: route.intent });
+
+        return { route };
+      },
+      (error: unknown) => {
+        finishStep("routing", "Intent check stopped");
+
+        return { error };
+      },
     );
 
-    stepDetails = { guardVerdict: guard.verdict };
+    const guard = guardResultSchema.parse(
+      await abortable(provider.guard(context, checkSignal), checkSignal),
+    );
+
+    finishStep("checking", undefined, { guardVerdict: guard.verdict });
 
     // Uncertainty about a short follow-up belongs to routing, where references
     // can be resolved and a focused clarification can be requested if needed.
     if (guard.verdict === "SPAM") {
+      checks.abort();
+      await routing;
       move("responding", "Preparing response", "guard");
 
       clarify(
@@ -187,16 +266,11 @@ export async function runWorkflow(
 
     move("routing", "Understanding intent", "router");
 
-    const route = routeResultSchema.parse(
-      await abortable(provider.route(context, signal), signal),
-    );
+    const routed = await routing;
 
-    emit("step.completed", {
-      stage,
-      agent,
-      label: "Intent identified",
-      details: { route: route.intent },
-    });
+    if ("error" in routed) throw routed.error;
+
+    const { route } = routed;
 
     if (
       route.clarification ||
@@ -366,6 +440,10 @@ export async function runWorkflow(
       cartStatus: receipt ? "committed" : "unchanged",
     });
   } catch (error) {
+    checks.abort();
+    await routing;
+    finishStep("checking", "Request check stopped");
+
     const failure =
       signal.aborted && signal.reason instanceof DomainError
         ? signal.reason
@@ -392,18 +470,10 @@ export async function runWorkflow(
           ["MODEL_UNAVAILABLE", "MODEL_TIMEOUT"].includes(failure.code),
       },
     });
+  } finally {
+    checks.abort();
   }
 }
-
-const labels: Partial<Record<RunStage, string>> = {
-  accepted: "Request received",
-  checking: "Checking request",
-  routing: "Understanding intent",
-  executing: "Running shopping tools",
-  validating: "Validating result",
-  awaiting_commit: "Saving cart",
-  responding: "Preparing verified response",
-};
 
 const toolLabels = {
   search_products: "Searching products",
