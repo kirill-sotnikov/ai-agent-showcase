@@ -209,9 +209,7 @@ test("quota failure rejects proposal without a saved change", async ({
 }) => {
   await page.goto("/");
 
-  await expect(
-    page.getByRole("status").filter({ hasText: "Connected" }),
-  ).toBeVisible();
+  await expect(page.getByLabel("Message", { exact: true })).toBeVisible();
 
   await page.evaluate(() => {
     const original = Storage.prototype.setItem;

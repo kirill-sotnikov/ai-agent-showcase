@@ -4,11 +4,10 @@ import {
   keyframes,
   style,
 } from "@vanilla-extract/css";
+import { palette } from "./theme";
 
 export const vars = createGlobalTheme(":root", {
-  green: "#254b40",
-  muted: "#8a908a",
-  border: "#e5e7df",
+  ...palette,
   minimumFontSize: "14px",
 });
 
@@ -23,17 +22,18 @@ export const appShell = style({
 export const appHeader = style({
   height: "89px",
   flexShrink: 0,
-  display: "flex",
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
   alignItems: "center",
-  justifyContent: "space-between",
   padding: "0 36px",
   borderBottom: `1px solid ${vars.border}`,
   gap: "20px",
-  background: "#fafbf7",
+  background: vars.surface,
 });
 
 export const brand = style({
   display: "flex",
+  justifySelf: "start",
   alignItems: "center",
   gap: "12px",
   fontSize: "20px",
@@ -42,8 +42,8 @@ export const brand = style({
 });
 
 export const brandMark = style({
-  background: vars.green,
-  color: "#fff",
+  background: vars.accent,
+  color: vars.accentForeground,
   display: "grid",
   placeItems: "center",
   width: "40px",
@@ -53,25 +53,16 @@ export const brandMark = style({
 
 export const active = style({});
 
-export const localIndicator = style({
-  display: "flex",
-  gap: "8px",
-  alignItems: "center",
-  fontSize: vars.minimumFontSize,
-  color: "#8c9389",
-  letterSpacing: "0.1px",
-});
-
 export const welcomeBanner = style({
   display: "flex",
   alignItems: "flex-start",
   gap: "14px",
   margin: "18px 22px 0",
   padding: "18px 20px",
-  border: "1px solid #ccd9c5",
+  border: `1px solid ${vars.accentBorder}`,
   borderRadius: "12px",
-  background: "#edf4e6",
-  color: vars.green,
+  background: vars.accentSoft,
+  color: vars.accentInk,
   fontSize: vars.minimumFontSize,
   lineHeight: 1.6,
 });
@@ -86,7 +77,7 @@ export const welcomeDismiss = style({
   minWidth: "32px",
   minHeight: "32px",
   borderRadius: "6px",
-  ":hover": { background: "#dce8d5" },
+  ":hover": { background: vars.accentSoftHover },
 });
 
 export const dot = style({});
@@ -109,11 +100,11 @@ export const assistantGrid = style({
 export const panel = style({
   border: `1px solid ${vars.border}`,
   borderRadius: "13px",
-  background: "#fdfefa",
+  background: vars.surface,
   overflow: "hidden",
   minWidth: 0,
   minHeight: 0,
-  boxShadow: "0 2px 3px #28332d02",
+  boxShadow: `0 2px 3px ${vars.shadowSubtle}`,
 });
 
 export const chatPanel = style({
@@ -121,31 +112,11 @@ export const chatPanel = style({
   flexDirection: "column",
 });
 
-export const panelHeading = style({
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  padding: "26px 27px 24px",
-  borderBottom: `1px solid ${vars.border}`,
-});
-
 export const eyebrow = style({
   fontSize: vars.minimumFontSize,
   fontWeight: 600,
-  color: "#8f998d",
+  color: vars.muted,
   lineHeight: 1.5,
-});
-
-export const connection = style({
-  display: "flex",
-  alignItems: "center",
-  gap: "7px",
-  fontSize: vars.minimumFontSize,
-  color: "#788570",
-  background: "#f0f4e9",
-  padding: "7px 10px",
-  border: "1px solid #e5ebdc",
-  borderRadius: "30px",
 });
 
 export const rightPanels = style({
@@ -177,8 +148,8 @@ export const welcomeIcon = style({
   display: "grid",
   placeItems: "center",
   borderRadius: "23px",
-  background: "#edf2e8",
-  color: "#668266",
+  background: vars.accentSoft,
+  color: vars.accentInk,
   transform: "rotate(-7deg)",
 });
 
@@ -200,7 +171,7 @@ export const runStatus = style({
   alignItems: "center",
   gap: "7px",
   fontSize: vars.minimumFontSize,
-  color: "#92988b",
+  color: vars.muted,
   marginBottom: "7px",
 });
 
@@ -208,11 +179,11 @@ export const composer = style({
   display: "flex",
   alignItems: "flex-end",
   gap: "10px",
-  background: "#fff",
-  border: "1px solid #dce3d7",
+  background: vars.surface,
+  border: `1px solid ${vars.borderStrong}`,
   borderRadius: "10px",
   padding: "13px",
-  boxShadow: "0 2px 4px #243d3110",
+  boxShadow: `0 2px 4px ${vars.shadow}`,
 });
 
 export const button = style({
@@ -220,9 +191,9 @@ export const button = style({
   justifyContent: "center",
   alignItems: "center",
   gap: "9px",
-  background: vars.green,
-  border: `1px solid ${vars.green}`,
-  color: "#fff",
+  background: vars.accent,
+  border: `1px solid ${vars.accent}`,
+  color: vars.accentForeground,
   borderRadius: "7px",
   padding: "10px 15px",
   fontWeight: 500,
@@ -236,19 +207,8 @@ export const secondary = style({});
 export const inputHint = style({
   fontSize: vars.minimumFontSize,
   textAlign: "center",
-  color: "#a1a799",
+  color: vars.muted,
   padding: "11px 0",
-});
-
-export const chatFootnote = style({
-  flexWrap: "wrap",
-  padding: "12px 25px",
-  borderTop: "1px solid #edf0e7",
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-  color: "#8f998b",
-  fontSize: vars.minimumFontSize,
 });
 
 export const compactHeading = style({
@@ -264,12 +224,12 @@ export const headingLabel = style({
   display: "flex",
   alignItems: "center",
   gap: "10px",
-  color: "#6c8065",
+  color: vars.textSecondary,
 });
 
 export const count = style({
-  background: "#edf1e6",
-  color: "#7a8d6b",
+  background: vars.accentSoft,
+  color: vars.accentInk,
   fontSize: vars.minimumFontSize,
   padding: "3px 6px",
   borderRadius: "5px",
@@ -287,8 +247,8 @@ export const cartScroll = style({});
 export const logScroll = style({
   margin: 0,
   padding: "16px 18px",
-  background: "#1c211e",
-  color: "#dce4dc",
+  background: vars.logBackground,
+  color: vars.logText,
   fontFamily: '"SFMono-Regular", Consolas, "Liberation Mono", monospace',
   fontSize: vars.minimumFontSize,
   lineHeight: 1.7,
@@ -297,7 +257,7 @@ export const logScroll = style({
   tabSize: 2,
   selectors: {
     "&:focus-visible": {
-      outline: "2px solid #a4bd94",
+      outline: `2px solid ${vars.focus}`,
       outlineOffset: "-2px",
     },
   },
@@ -315,8 +275,8 @@ export const emptyIllustration = style({
   width: "80px",
   display: "grid",
   placeItems: "center",
-  color: "#bac6a9",
-  background: "#f1f4e8",
+  color: vars.accentInk,
+  background: vars.accentSoft,
   borderRadius: "50%",
   margin: "0 auto 12px",
 });
@@ -327,13 +287,13 @@ export const cartTotal = style({
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  background: "#fafcf5",
+  background: vars.surfaceSubtle,
   fontSize: vars.minimumFontSize,
   fontWeight: 500,
 });
 
 export const muted = style({
-  color: "#969d90",
+  color: vars.muted,
 });
 
 export const small = style({
@@ -345,7 +305,7 @@ export const cartItem = style({
   position: "relative",
   gap: "14px",
   padding: "20px 22px",
-  borderBottom: "1px solid #ecf0e5",
+  borderBottom: `1px solid ${vars.border}`,
   alignItems: "flex-start",
 });
 
@@ -355,7 +315,7 @@ export const productTile = style({
   borderRadius: "8px",
   display: "grid",
   placeItems: "center",
-  color: "#8a977b",
+  color: vars.accentInk,
   flexShrink: 0,
 });
 
@@ -386,21 +346,21 @@ export const quantityRow = style({
 export const stepper = style({
   display: "flex",
   alignItems: "center",
-  border: "1px solid #dde4d4",
+  border: `1px solid ${vars.borderStrong}`,
   borderRadius: "5px",
   height: "26px",
 });
 
 export const textButton = style({
   fontSize: vars.minimumFontSize,
-  color: "#7c8b70",
+  color: vars.accentInk,
   padding: "4px 0",
   textDecoration: "underline",
   textUnderlineOffset: "3px",
 });
 
 export const danger = style({
-  color: "#ab7669",
+  color: vars.danger,
 });
 
 export const messages = style({
@@ -420,8 +380,8 @@ export const messageAvatar = style({
   width: "29px",
   height: "29px",
   borderRadius: "9px",
-  background: "#edf2e6",
-  color: "#7f966a",
+  background: vars.accentSoft,
+  color: vars.accentInk,
   display: "grid",
   placeItems: "center",
   flexShrink: 0,
@@ -433,7 +393,7 @@ export const user = style({});
 export const messageMeta = style({
   fontSize: vars.minimumFontSize,
   fontWeight: 600,
-  color: "#435c3c",
+  color: vars.text,
   display: "flex",
   alignItems: "center",
   gap: "10px",
@@ -443,9 +403,9 @@ export const messageMeta = style({
 export const savedTag = style({
   fontSize: vars.minimumFontSize,
   borderRadius: "3px",
-  background: "#eef4e7",
+  background: vars.successSoft,
   padding: "3px 5px",
-  color: "#6e8b5c",
+  color: vars.success,
 });
 
 export const settingsPage = style({
@@ -459,7 +419,7 @@ export const settingsTitle = style({
 });
 
 export const settingsCard = style({
-  background: "#fdfefa",
+  background: vars.surface,
   border: `1px solid ${vars.border}`,
   borderRadius: "12px",
   padding: "27px",
@@ -474,7 +434,7 @@ export const identityCard = style({
 
 export const sectionNumber = style({
   fontSize: vars.minimumFontSize,
-  color: "#abb39b",
+  color: vars.muted,
   letterSpacing: "1px",
 });
 
@@ -497,7 +457,7 @@ export const catalogItem = style({
   display: "flex",
   alignItems: "center",
   gap: "18px",
-  borderTop: "1px solid #e8eddf",
+  borderTop: `1px solid ${vars.border}`,
   padding: "22px 0",
 });
 
@@ -522,7 +482,7 @@ export const attributeTags = style({
 
 export const settingsFooter = style({
   fontSize: vars.minimumFontSize,
-  color: "#9da78f",
+  color: vars.muted,
   display: "flex",
   justifyContent: "space-between",
   gap: "20px",
@@ -531,8 +491,8 @@ export const settingsFooter = style({
 });
 
 export const productForm = style({
-  background: "#f3f6ed",
-  border: "1px solid #dce5d1",
+  background: vars.accentSoft,
+  border: `1px solid ${vars.accentBorder}`,
   borderRadius: "8px",
   padding: "22px",
   marginBottom: "25px",
@@ -567,15 +527,15 @@ export const settingsEmpty = style({
 });
 
 export const fieldError = style({
-  color: "#a25b4c !important",
+  color: `${vars.danger} !important`,
   marginTop: "12px !important",
 });
 
 export const errorBanner = style({
   position: "relative",
   padding: "12px 25px",
-  background: "#f5e9df",
-  color: "#8f5644",
+  background: vars.dangerSoft,
+  color: vars.danger,
   fontSize: vars.minimumFontSize,
   display: "flex",
   alignItems: "center",
@@ -586,7 +546,7 @@ export const errorBanner = style({
 export const loading = style({
   padding: "80px",
   textAlign: "center",
-  color: "#7e8e73",
+  color: vars.muted,
 });
 
 export const srOnly = style({
@@ -612,8 +572,8 @@ export const catalogList = style({});
 
 globalStyle(`:root`, {
   fontFamily: 'Inter, "Segoe UI", Arial, sans-serif',
-  color: "#252d2a",
-  background: "#f5f4ef",
+  color: vars.text,
+  background: vars.canvas,
   fontSynthesis: "none",
   WebkitFontSmoothing: "antialiased",
   fontWeight: 400,
@@ -663,7 +623,7 @@ input:focus-visible,
 textarea:focus-visible,
 summary:focus-visible`,
   {
-    outline: "3px solid #86af97",
+    outline: `3px solid ${vars.focus}`,
     outlineOffset: "3px",
   },
 );
@@ -708,17 +668,19 @@ globalStyle(`${brand} small`, {
   fontSize: vars.minimumFontSize,
   fontWeight: 500,
   letterSpacing: "1.65px",
-  color: "#91988e",
+  color: vars.muted,
   marginTop: "5px",
 });
 
 globalStyle(`${appHeader} nav`, {
+  gridColumn: "2",
+  justifySelf: "center",
   display: "flex",
-  border: "1px solid #e5e7df",
+  border: `1px solid ${vars.border}`,
   borderRadius: "9px",
   padding: "4px",
   gap: "4px",
-  background: "#f0f2eb",
+  background: vars.surfaceMuted,
 });
 
 globalStyle(`${appHeader} nav a`, {
@@ -726,42 +688,28 @@ globalStyle(`${appHeader} nav a`, {
   alignItems: "center",
   gap: "8px",
   padding: "10px 18px",
-  color: "#747d73",
+  color: vars.muted,
   fontSize: vars.minimumFontSize,
   borderRadius: "6px",
 });
 
 globalStyle(`${appHeader} nav a${active}`, {
-  background: "#fff",
-  color: "#264d3f",
-  boxShadow: "0 1px 4px #26332d10",
+  background: vars.surface,
+  color: vars.accentInk,
+  boxShadow: `0 1px 4px ${vars.shadow}`,
 });
 
-globalStyle(
-  `${localIndicator} > span,
-${dot}`,
-  {
-    width: "6px",
-    height: "6px",
-    borderRadius: "50%",
-    display: "inline-block",
-    background: "#a2a79f",
-    flexShrink: 0,
-  },
-);
+globalStyle(`${dot}`, {
+  width: "6px",
+  height: "6px",
+  borderRadius: "50%",
+  display: "inline-block",
+  background: vars.muted,
+  flexShrink: 0,
+});
 
-globalStyle(
-  `${online},
-${localIndicator} > span`,
-  {
-    background: "#7a9c79",
-  },
-);
-
-globalStyle(`${panelHeading} h1`, {
-  fontSize: "24px",
-  marginTop: "5px",
-  lineHeight: 1.2,
+globalStyle(`${online}`, {
+  background: vars.success,
 });
 
 globalStyle(`${welcomeIcon} svg`, {
@@ -776,39 +724,39 @@ globalStyle(`${welcome} > h2`, {
   letterSpacing: "-1px",
   maxWidth: "340px",
   margin: "12px auto 15px",
-  color: "#304039",
+  color: vars.text,
 });
 
 globalStyle(`${welcome} > p`, {
   fontSize: vars.minimumFontSize,
   lineHeight: 1.8,
-  color: "#858d82",
+  color: vars.muted,
   margin: "auto",
   maxWidth: "300px",
 });
 
 globalStyle(`${suggestions} button`, {
-  border: "1px solid #e3e8dc",
-  background: "#f7f9f2",
+  border: `1px solid ${vars.border}`,
+  background: vars.surfaceSubtle,
   position: "relative",
   textAlign: "left",
   padding: "13px 34px 13px 16px",
   fontSize: vars.minimumFontSize,
   lineHeight: 1.4,
   borderRadius: "9px",
-  color: "#75816f",
+  color: vars.muted,
   transition: "background 0.15s",
 });
 
 globalStyle(`${suggestions} button:hover`, {
-  background: "#eff4e9",
+  background: vars.accentSoftHover,
 });
 
 globalStyle(`${suggestions} button > span`, {
   display: "block",
   fontSize: vars.minimumFontSize,
   fontWeight: 600,
-  color: "#3b5243",
+  color: vars.text,
   marginBottom: "5px",
 });
 
@@ -816,7 +764,7 @@ globalStyle(`${suggestions} button > svg`, {
   position: "absolute",
   right: "13px",
   top: "calc(50% - 8px)",
-  color: "#94a38a",
+  color: vars.muted,
 });
 
 globalStyle(`${composer} textarea`, {
@@ -829,34 +777,36 @@ globalStyle(`${composer} textarea`, {
   fontSize: vars.minimumFontSize,
   lineHeight: 1.6,
   outline: "none",
-  color: "#33453b",
+  color: vars.text,
 });
 
 globalStyle(`${composer} textarea::placeholder`, {
-  color: "#a3aa9c",
+  color: vars.muted,
 });
 
 globalStyle(`${button}:hover:not(:disabled)`, {
-  background: "#366450",
+  background: vars.accentHover,
 });
 
 globalStyle(`${button}${secondary}`, {
-  color: "#52634e",
-  background: "#fff",
-  borderColor: "#dae1d4",
+  color: vars.textSecondary,
+  background: vars.surface,
+  borderColor: vars.borderStrong,
+});
+
+globalStyle(`${button}${secondary}:hover:not(:disabled)`, {
+  background: vars.accentSoftHover,
+  color: vars.accentInk,
+  borderColor: vars.accentBorder,
 });
 
 globalStyle(`${inputHint} span`, {
   margin: "0 6px",
 });
 
-globalStyle(`${chatFootnote} > span:last-child`, {
-  marginLeft: "auto",
-});
-
 globalStyle(`${headingLabel} h2`, {
   fontSize: "16px",
-  color: "#354331",
+  color: vars.text,
 });
 
 globalStyle(
@@ -883,13 +833,13 @@ globalStyle(`${emptyCart} h3`, {
   fontFamily: "Georgia, serif",
   fontWeight: 400,
   fontSize: "20px",
-  color: "#5f6c56",
+  color: vars.textSecondary,
   letterSpacing: "-0.3px",
 });
 
 globalStyle(`${emptyCart} p`, {
   fontSize: vars.minimumFontSize,
-  color: "#929b87",
+  color: vars.muted,
   lineHeight: 1.8,
   marginTop: "9px",
 });
@@ -897,7 +847,7 @@ globalStyle(`${emptyCart} p`, {
 globalStyle(`${cartTotal} small`, {
   display: "block",
   fontSize: vars.minimumFontSize,
-  color: "#9aa28d",
+  color: vars.muted,
   marginTop: "5px",
   fontWeight: 400,
 });
@@ -905,7 +855,7 @@ globalStyle(`${cartTotal} small`, {
 globalStyle(`${cartTotal} strong`, {
   fontSize: "24px",
   letterSpacing: "-0.8px",
-  color: "#3b533a",
+  color: vars.text,
   fontWeight: 500,
 });
 
@@ -920,17 +870,17 @@ globalStyle(`${productTile} svg`, {
 });
 
 globalStyle(`${productTile}${sage}`, {
-  background: "#edf1e2",
+  background: vars.productBlue,
 });
 
 globalStyle(`${productTile}${sand}`, {
-  background: "#f1ebe1",
-  color: "#a29479",
+  background: vars.productNeutral,
+  color: vars.muted,
 });
 
 globalStyle(`${productTile}${lavender}`, {
-  background: "#eeedf2",
-  color: "#9590a2",
+  background: vars.productViolet,
+  color: vars.productVioletInk,
 });
 
 globalStyle(`${cartItem} h3`, {
@@ -943,7 +893,7 @@ globalStyle(`${stepper} button`, {
   width: "24px",
   height: "24px",
   fontSize: vars.minimumFontSize,
-  color: "#6a7d5c",
+  color: vars.textSecondary,
 });
 
 globalStyle(`${stepper} input`, {
@@ -955,7 +905,7 @@ globalStyle(`${stepper} input`, {
   padding: 0,
   appearance: "textfield",
   MozAppearance: "textfield",
-  color: "#55694b",
+  color: vars.textSecondary,
 });
 
 globalStyle(`${stepper} input::-webkit-inner-spin-button`, {
@@ -963,8 +913,8 @@ globalStyle(`${stepper} input::-webkit-inner-spin-button`, {
 });
 
 globalStyle(`${message}${user} ${messageAvatar}`, {
-  background: "#ebece6",
-  color: "#9a9c90",
+  background: vars.surfaceMuted,
+  color: vars.muted,
 });
 
 globalStyle(`${message} > div`, {
@@ -975,7 +925,7 @@ globalStyle(`${message} > div`, {
 globalStyle(`${messageMeta} time`, {
   fontSize: vars.minimumFontSize,
   fontWeight: 400,
-  color: "#a2a995",
+  color: vars.muted,
 });
 
 globalStyle(`${message} p`, {
@@ -983,12 +933,12 @@ globalStyle(`${message} p`, {
   lineHeight: 1.85,
   whiteSpace: "pre-wrap",
   overflowWrap: "anywhere",
-  color: "#63715c",
+  color: vars.textSecondary,
 });
 
 globalStyle(`${message}${user} p`, {
-  color: "#536349",
-  background: "#f1f4e9",
+  color: vars.textSecondary,
+  background: vars.accentSoft,
   padding: "12px 15px",
   borderRadius: "0 10px 10px 10px",
 });
@@ -996,7 +946,7 @@ globalStyle(`${message}${user} p`, {
 globalStyle(`${message} small`, {
   display: "block",
   fontSize: vars.minimumFontSize,
-  color: "#ab9074",
+  color: vars.muted,
   marginTop: "6px",
 });
 
@@ -1005,12 +955,12 @@ globalStyle(`${settingsTitle} h1`, {
   fontSize: "40px",
   fontWeight: 400,
   margin: "9px 0",
-  color: "#344d3c",
+  color: vars.text,
 });
 
 globalStyle(`${settingsTitle} p`, {
   fontSize: vars.minimumFontSize,
-  color: "#8c9983",
+  color: vars.muted,
 });
 
 globalStyle(`${settingsCard} h2`, {
@@ -1025,7 +975,7 @@ globalStyle(`${settingsCard} h2`, {
 globalStyle(`${settingsCard} p`, {
   fontSize: vars.minimumFontSize,
   lineHeight: 1.8,
-  color: "#929d87",
+  color: vars.muted,
 });
 
 globalStyle(`${settingsCard} label`, {
@@ -1034,20 +984,20 @@ globalStyle(`${settingsCard} label`, {
   gap: "9px",
   fontSize: vars.minimumFontSize,
   fontWeight: 500,
-  color: "#6a7a5e",
+  color: vars.textSecondary,
 });
 
 globalStyle(
   `${settingsCard} textarea,
 ${settingsCard} input`,
   {
-    border: "1px solid #dce4d4",
+    border: `1px solid ${vars.borderStrong}`,
     borderRadius: "6px",
     padding: "12px",
     fontSize: vars.minimumFontSize,
-    color: "#5d7052",
+    color: vars.textSecondary,
     lineHeight: 1.7,
-    background: "#fff",
+    background: vars.surface,
     maxWidth: "100%",
     width: "100%",
   },
@@ -1060,7 +1010,7 @@ globalStyle(`${identityCard} > form > textarea`, {
 
 globalStyle(`${formFooter} > span`, {
   fontSize: vars.minimumFontSize,
-  color: "#a2ac96",
+  color: vars.muted,
 });
 
 globalStyle(`${catalogHeader} > div`, {
@@ -1082,14 +1032,14 @@ globalStyle(`${catalogItemInfo} > p`, {
 globalStyle(`${catalogItem} > strong`, {
   fontSize: vars.minimumFontSize,
   fontWeight: 500,
-  color: "#5b7050",
+  color: vars.textSecondary,
   whiteSpace: "nowrap",
 });
 
 globalStyle(`${attributeTags} span`, {
   fontSize: vars.minimumFontSize,
-  background: "#f1f5e9",
-  color: "#99a68b",
+  background: vars.accentSoft,
+  color: vars.muted,
   borderRadius: "4px",
   padding: "3px 6px",
 });
@@ -1112,7 +1062,7 @@ globalStyle(`${formGrid} textarea`, {
 
 globalStyle(`${formGrid} small`, {
   fontSize: vars.minimumFontSize,
-  color: "#99a88c",
+  color: vars.muted,
   lineHeight: 1.6,
 });
 
@@ -1121,8 +1071,8 @@ globalStyle(
 ${pending}`,
   {
     fontSize: vars.minimumFontSize,
-    color: "#8b8e62",
-    background: "#f1f1de",
+    color: vars.accentInk,
+    background: vars.accentSoft,
     padding: "12px",
     borderRadius: "6px",
     marginBottom: "18px",
@@ -1164,14 +1114,6 @@ globalStyle(`${appHeader}`, {
   },
 });
 
-globalStyle(`${localIndicator}`, {
-  "@media": {
-    "(max-width: 1000px)": {
-      display: "none",
-    },
-  },
-});
-
 globalStyle(`${assistantGrid}`, {
   "@media": {
     "(max-width: 1000px)": {
@@ -1185,14 +1127,6 @@ globalStyle(`${rightPanels}`, {
   "@media": {
     "(max-width: 1000px)": {
       gap: "13px",
-    },
-  },
-});
-
-globalStyle(`${panelHeading}`, {
-  "@media": {
-    "(max-width: 1000px)": {
-      padding: "22px",
     },
   },
 });
@@ -1271,6 +1205,11 @@ globalStyle(`${appHeader}`, {
       padding: "0 16px",
       gap: "12px",
     },
+    "(max-width: 440px)": {
+      height: "auto",
+      gridTemplateColumns: "1fr",
+      padding: "12px 16px",
+    },
   },
 });
 
@@ -1279,6 +1218,17 @@ globalStyle(`${brand}`, {
     "(max-width: 720px)": {
       fontSize: "16px",
       gap: "8px",
+    },
+    "(max-width: 440px)": {
+      justifySelf: "center",
+    },
+  },
+});
+
+globalStyle(`${appHeader} nav`, {
+  "@media": {
+    "(max-width: 440px)": {
+      gridColumn: "1",
     },
   },
 });
@@ -1379,14 +1329,6 @@ globalStyle(`${welcome} > h2`, {
   "@media": {
     "(max-width: 720px)": {
       fontSize: "32px",
-    },
-  },
-});
-
-globalStyle(`${panelHeading} h1`, {
-  "@media": {
-    "(max-width: 720px)": {
-      fontSize: "22px",
     },
   },
 });

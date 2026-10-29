@@ -60,9 +60,6 @@ export const text = {
   readOnly:
     "Editing requires Web Locks. Use a supported browser on localhost or HTTPS.",
   busy: "A request is running. Product, identity, and cart changes are paused.",
-  local: "Saved in this browser",
-  fake: "Demo provider",
-  openai: "OpenAI provider",
   examples: [
     "Find a lamp under $50 and add the cheapest one.",
     "Find wireless headphones under $100.",

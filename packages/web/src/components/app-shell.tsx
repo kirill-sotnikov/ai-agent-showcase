@@ -40,10 +40,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             {text.settings}
           </Link>
         </nav>
-        <span className={styles.localIndicator}>
-          <span />
-          {text.local}
-        </span>
       </header>
       {view.showWelcome && (
         <section
