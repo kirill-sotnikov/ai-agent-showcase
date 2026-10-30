@@ -120,6 +120,7 @@ describe("visitor notification endpoint", () => {
 
   async function request(
     options: {
+      nodeEnv?: "development" | "test" | "production";
       configured?: boolean;
       telegram?: { TG_NOTIFY_BOT_TOKEN?: string; TG_NOTIFY_BOT_CHAT?: string };
       origin?: string;
@@ -128,8 +129,8 @@ describe("visitor notification endpoint", () => {
   ) {
     const server = createServer(
       readConfig({
-        NODE_ENV: "test",
-        LLM_PROVIDER: "fake",
+        NODE_ENV: options.nodeEnv ?? "test",
+        LLM_PROVIDER: options.nodeEnv === "production" ? "openai" : "fake",
         ALLOWED_ORIGINS: "http://test.local",
         ...(options.configured !== false
           ? { TG_NOTIFY_BOT_TOKEN: "test-token", TG_NOTIFY_BOT_CHAT: "1234" }
@@ -150,27 +151,34 @@ describe("visitor notification endpoint", () => {
     }
   }
 
-  it("sends the requested Telegram message without a date or time", async () => {
-    const fetch = vi.fn().mockResolvedValue(Response.json({ ok: true }));
+  it.each([
+    ["development", "[DEV: AI Agents Showcase] Новый посетитель"],
+    ["test", "[AI Agent Showcase] Новый посетитель"],
+    ["production", "[AI Agent Showcase] Новый посетитель"],
+  ] as const)(
+    "sends the expected Telegram message in %s",
+    async (nodeEnv, text) => {
+      const fetch = vi.fn().mockResolvedValue(Response.json({ ok: true }));
 
-    vi.stubGlobal("fetch", fetch);
+      vi.stubGlobal("fetch", fetch);
 
-    const response = await request();
+      const response = await request({ nodeEnv });
 
-    expect(response.statusCode).toBe(204);
-    expect(fetch).toHaveBeenCalledTimes(1);
+      expect(response.statusCode).toBe(204);
+      expect(fetch).toHaveBeenCalledTimes(1);
 
-    expect(fetch.mock.calls[0][0]).toBe(
-      "https://api.telegram.org/bottest-token/sendMessage",
-    );
+      expect(fetch.mock.calls[0][0]).toBe(
+        "https://api.telegram.org/bottest-token/sendMessage",
+      );
 
-    const message = JSON.parse(fetch.mock.calls[0][1].body);
+      const message = JSON.parse(fetch.mock.calls[0][1].body);
 
-    expect(message).toEqual({
-      chat_id: "1234",
-      text: "[AI Agent Showcase] Новый посетитель",
-    });
-  });
+      expect(message).toEqual({
+        chat_id: "1234",
+        text,
+      });
+    },
+  );
 
   it.each([
     {},

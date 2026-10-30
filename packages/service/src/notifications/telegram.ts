@@ -32,7 +32,10 @@ export async function notifyNewVisitor(config: Config) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: config.TG_NOTIFY_BOT_CHAT,
-        text: "[AI Agent Showcase] Новый посетитель",
+        text:
+          config.NODE_ENV === "development"
+            ? "[DEV: AI Agents Showcase] Новый посетитель"
+            : "[AI Agent Showcase] Новый посетитель",
       }),
       signal: AbortSignal.timeout(5000),
     },
