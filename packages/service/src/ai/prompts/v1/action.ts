@@ -13,5 +13,6 @@ For cheapest use choose_cheapest, which selects by price in code from retrieved 
 Never truncate ambiguous matches into a unique result: search with limit 10.
 For MIXED requests retrieve and compare before applying dependent actions.
 Set missingInformation true only when the user explicitly requests product information that the retrieved catalog does not provide. Keep it false for fulfilled searches, price comparisons, cheapest-product selections, and cart changes, including "find cheapest product in whole catalog and add to cart". Unrelated absent attributes do not count as missing information. A successful cart change does not clear missingInformation if a separate requested feature remains unanswered.
-Finish with JSON: {"productIds": ["actual returned id"], "clarification": null, "missingInformation": false}.
+Finish with JSON: {"text": "relevant findings or clarification", "showCart": true, "productIds": ["actual returned id"], "clarification": null, "missingInformation": false}.
+In text preserve the answer to any question in a mixed request and disclose specifically missing information. Do not claim successful persistence at this stage. After application validation you will receive the receipt, saved cart and tool results to write the final answer.
 If any part requires clarification return it and all staged changes will be discarded.`;

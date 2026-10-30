@@ -2,6 +2,73 @@ import type { ShoppingScenario } from "../types.js";
 
 export const shoppingScenarios: ShoppingScenario[] = [
   {
+    id: "text-greeting",
+    message: "Hello",
+    expected: {
+      outcome: "completed",
+      items: null,
+      productIds: [],
+      showCart: false,
+      noTools: true,
+    },
+  },
+  {
+    id: "text-capabilities",
+    message: "What can you do?",
+    expected: {
+      outcome: "completed",
+      items: null,
+      productIds: [],
+      showCart: false,
+      noTools: true,
+      answerContains: ["cart", "products"],
+    },
+  },
+  {
+    id: "text-product-color",
+    message: "What color is the Arc Desk Lamp?",
+    expected: {
+      outcome: "completed",
+      items: null,
+      productIds: ["11111111-1111-4111-8111-111111111111"],
+      showCart: false,
+      answerContains: ["Sage"],
+    },
+  },
+  {
+    id: "text-cart-price",
+    message: "What is the price of lamps in my cart? Show my cart too.",
+    cart: [{ productId: "11111111-1111-4111-8111-111111111111", quantity: 2 }],
+    expected: {
+      outcome: "completed",
+      items: null,
+      showCart: true,
+      answerContains: ["39", "78"],
+    },
+  },
+  {
+    id: "text-empty-cart",
+    message: "Show my cart. What is in it?",
+    expected: {
+      outcome: "completed",
+      items: null,
+      productIds: [],
+      showCart: true,
+      answerContains: ["empty"],
+    },
+  },
+  {
+    id: "text-follow-up-comparison",
+    message: "Is it the cheapest lamp in the catalog?",
+    previousAnswer: "Linen Table Lamp costs $48.00.",
+    expected: {
+      outcome: "completed",
+      items: null,
+      showCart: false,
+      answerContains: ["No", "Arc Desk Lamp", "39"],
+    },
+  },
+  {
     id: "search-lamp",
     message: "Find lamps.",
     expected: {
@@ -402,7 +469,7 @@ export const shoppingScenarios: ShoppingScenario[] = [
     fault: "commit-rejection",
   },
   {
-    id: "composer-failure",
+    id: "action-response-failure",
     message: "Add the Arc Desk Lamp.",
     expected: {
       outcome: "failed",
@@ -414,6 +481,6 @@ export const shoppingScenarios: ShoppingScenario[] = [
       ],
       errorCode: "MODEL_UNAVAILABLE",
     },
-    fault: "composer-failure",
+    fault: "action-response-failure",
   },
 ];

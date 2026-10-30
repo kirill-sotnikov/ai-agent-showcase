@@ -14,10 +14,11 @@ export interface ShoppingScenario {
   identity?: string;
   injectDescription?: boolean;
   pending?: boolean;
+  previousAnswer?: string;
   fault?:
     | "malformed-route"
     | "provider-failure"
-    | "composer-failure"
+    | "action-response-failure"
     | "commit-rejection";
   expected: {
     outcome: "completed" | "clarification" | "failed" | "cancelled";
@@ -25,6 +26,9 @@ export interface ShoppingScenario {
     productIds?: string[];
     missingInformation?: boolean;
     errorCode?: string;
+    showCart?: boolean;
+    answerContains?: string[];
+    noTools?: boolean;
   };
 }
 
@@ -34,6 +38,7 @@ export const shoppingResultSchema = z.object({
   cartStatus: z.enum(["unchanged", "committed"]),
   productIds: z.array(idSchema),
   messages: z.array(z.string()),
+  showCarts: z.array(z.boolean()),
   clarification: z
     .object({ question: z.string(), candidateIds: z.array(idSchema) })
     .nullable(),

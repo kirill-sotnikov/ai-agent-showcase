@@ -47,6 +47,19 @@ export const settingsSchema = z.strictObject({
   agentIdentity: z.string().max(2000),
   currency: z.literal("USD"),
 });
+export const cartViewSchema = z.strictObject({
+  items: z
+    .array(
+      z.strictObject({
+        productId: idSchema,
+        name: z.string().min(1).max(120),
+        quantity: z.number().int().min(1).max(LIMITS.quantity),
+        priceMinor: moneySchema,
+      }),
+    )
+    .max(LIMITS.products),
+  totalMinor: moneySchema,
+});
 export const messageSchema = z.strictObject({
   id: idSchema,
   requestId: idSchema,
@@ -54,6 +67,8 @@ export const messageSchema = z.strictObject({
   content: z.string().min(1).max(4000),
   timestamp: z.iso.datetime(),
   incomplete: z.boolean(),
+  showCart: z.boolean().optional(),
+  cart: cartViewSchema.nullable().optional(),
 });
 export const clarificationSchema = z.strictObject({
   requestId: idSchema,
@@ -307,6 +322,8 @@ export const eventPayloads = {
   "assistant.message": z.strictObject({
     messageId: idSchema,
     content: z.string().min(1).max(4000),
+    showCart: z.boolean().optional(),
+    cart: cartViewSchema.nullable().optional(),
   }),
   "clarification.required": clarificationSchema,
   "request.completed": terminalSchema,

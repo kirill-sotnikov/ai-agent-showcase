@@ -8,7 +8,7 @@ import { z } from "zod";
 import { DomainError } from "@shop/shared/domain";
 import type { Config } from "../../config/index.js";
 import { actionPrompt } from "../prompts/v1/action.js";
-import { composerPrompt } from "../prompts/v1/composer.js";
+import { actionResponsePrompt } from "../prompts/v1/action-response.js";
 import { guardPrompt } from "../prompts/v1/guard.js";
 import { knowledgePrompt } from "../prompts/v1/knowledge.js";
 import { routerPrompt } from "../prompts/v1/router.js";
@@ -17,7 +17,8 @@ import type { GatewayTool, ToolGateway } from "../tools/gateway.js";
 import {
   agentResultSchema,
   guardResultSchema,
-  presentationSchema,
+  responseSchema,
+  type ActionOutcome,
   routeResultSchema,
   type AgentContext,
   type AgentResult,
@@ -119,7 +120,6 @@ export class OpenAIProvider implements Provider {
     input: string,
     schema: S,
     signal: AbortSignal,
-    stream = false,
   ): Promise<z.infer<S>> {
     this.beforeCall();
 
@@ -139,39 +139,6 @@ export class OpenAIProvider implements Provider {
     };
 
     try {
-      if (stream) {
-        const events = await this.client.responses.create(
-          { ...params, stream: true },
-          { signal: timeout },
-        );
-
-        let text = "";
-        let completed = false;
-
-        for await (const event of events) {
-          if (event.type === "response.output_text.delta") text += event.delta;
-
-          if (event.type === "response.completed") {
-            this.track(event.response);
-            completed = true;
-          }
-
-          if (text.length > 20000)
-            throw new DomainError(
-              "MODEL_INVALID_OUTPUT",
-              "The model response exceeded its limit.",
-            );
-        }
-
-        if (!completed)
-          throw new DomainError(
-            "MODEL_INVALID_OUTPUT",
-            "The model did not finish its response.",
-          );
-
-        return schema.parse(JSON.parse(text));
-      }
-
       const response = await this.client.responses.parse(params, {
         signal: timeout,
       });
@@ -344,28 +311,22 @@ export class OpenAIProvider implements Provider {
     }
   }
 
-  present(
+  completeAction(
     context: AgentContext,
     result: AgentResult,
-    committed: boolean,
+    outcome: ActionOutcome,
     signal: AbortSignal,
   ) {
-    const facts = context.snapshot.products.filter((product) =>
-      result.productIds.includes(product.id),
-    );
-
     return this.structured(
-      "presentation",
-      composerPrompt,
+      "action_response",
+      actionResponsePrompt,
       JSON.stringify({
-        message: context.message,
-        facts,
-        missingInformation: result.missingInformation,
-        persistence: committed ? "committed" : "unchanged",
+        context: JSON.parse(this.context(context)),
+        result,
+        ...outcome,
       }),
-      presentationSchema,
+      responseSchema,
       signal,
-      true,
     );
   }
 }

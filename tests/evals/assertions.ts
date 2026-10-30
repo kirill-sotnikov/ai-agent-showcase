@@ -87,12 +87,53 @@ export function scenarioAssertions(scenario: ShoppingScenario): Assertion[] {
       assertion("missing_information", (result) =>
         grade(
           result.messages.some((message) =>
-            message.includes(
-              "The catalog does not include further specifications",
+            /not (include|provide|specif|list)|doesn't (include|provide|specif|list)|unknown|not available|no (information|details)|cannot (confirm|determine)|can't (confirm|determine)/i.test(
+              message,
             ),
           ) === scenario.expected.missingInformation,
           "Missing specifications are communicated correctly",
           "Missing-specification disclosure does not match expectations",
+        ),
+      ),
+    );
+
+  if (scenario.expected.showCart !== undefined)
+    assertions.push(
+      assertion("show_cart", (result) =>
+        grade(
+          result.showCarts.length > 0 &&
+            result.showCarts.every(
+              (value) => value === scenario.expected.showCart,
+            ),
+          "Cart visibility matches the request",
+          "Incorrect cart visibility",
+        ),
+      ),
+    );
+
+  if (scenario.expected.answerContains)
+    assertions.push(
+      assertion("answer", (result) =>
+        grade(
+          scenario.expected.answerContains!.every((text) =>
+            result.messages
+              .join(" ")
+              .toLowerCase()
+              .includes(text.toLowerCase()),
+          ),
+          "The text answers the user's question",
+          "Missing expected answer content",
+        ),
+      ),
+    );
+
+  if (scenario.expected.noTools)
+    assertions.push(
+      assertion("no_tools", (result) =>
+        grade(
+          result.tools.length === 0,
+          "Conversational answer needs no tools",
+          "Unnecessary tool calls",
         ),
       ),
     );

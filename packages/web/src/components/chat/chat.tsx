@@ -1,4 +1,5 @@
 import type { PersistedState } from "@shop/shared/contracts";
+import { formatMoney } from "@shop/shared/money";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import * as styles from "../../styles.css";
@@ -50,13 +51,7 @@ export function Chat({
             <div className={styles.suggestions}>
               {text.examples.map((example, index) => (
                 <button key={example} onClick={() => setDraft(example)}>
-                  <span>
-                    {
-                      ["Find & add", "Explore products"][
-                        index
-                      ]
-                    }
-                  </span>
+                  <span>{["Find & add", "Explore products"][index]}</span>
                   {example}
                   <Icon name="arrow" size={17} />
                 </button>
@@ -89,6 +84,33 @@ export function Chat({
                     </time>
                   </div>
                   <p>{message.content}</p>
+                  {message.showCart && message.cart && (
+                    <section
+                      className={styles.messageCart}
+                      aria-label="Cart at time of response"
+                    >
+                      <h3>Cart</h3>
+                      {message.cart.items.length ? (
+                        <ul>
+                          {message.cart.items.map((item) => (
+                            <li key={item.productId}>
+                              <span>
+                                {item.name} × {item.quantity}
+                              </span>
+                              <span>
+                                {formatMoney(item.priceMinor * item.quantity)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>Your cart is empty.</p>
+                      )}
+                      <strong>
+                        Total: {formatMoney(message.cart.totalMinor)}
+                      </strong>
+                    </section>
+                  )}
                   {message.incomplete && <small>Incomplete response</small>}
                 </div>
               </article>

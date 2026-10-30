@@ -72,7 +72,7 @@ function response(
   };
 }
 
-it("uses the configured model for guard, router, dependent tools, and streamed composition through the real SDK", async () => {
+it("uses the configured model for guard, router, dependent tools, and Action response after persistence through the real SDK", async () => {
   const server = Fastify();
 
   servers.push(server);
@@ -87,7 +87,7 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
 
   let toolRound = 0;
 
-  server.post("/responses", async (request, reply) => {
+  server.post("/responses", async (request) => {
     const body = request.body as {
       model: string;
       stream?: boolean;
@@ -152,6 +152,8 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
 
         output = response(
           {
+            text: "Arc Desk Lamp is the cheapest lamp found.",
+            showCart: true,
             productIds: [seedProducts[0].id],
             clarification: null,
             missingInformation: false,
@@ -166,25 +168,10 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
       default:
         output = response(
           {
-            intro: "Here is your saved cart.",
-            productIds: [seedProducts[0].id],
-            missingInformation: false,
+            text: "Added one item to your cart.",
+            showCart: true,
           },
           body.model,
-        );
-    }
-
-    if (body.stream) {
-      const text = JSON.stringify({
-        intro: "Here is your saved cart.",
-        productIds: [seedProducts[0].id],
-        missingInformation: false,
-      });
-
-      return reply
-        .type("text/event-stream")
-        .send(
-          `event: response.output_text.delta\ndata: ${JSON.stringify({ type: "response.output_text.delta", delta: text })}\n\nevent: response.completed\ndata: ${JSON.stringify({ type: "response.completed", response: output })}\n\n`,
         );
     }
 
@@ -235,6 +222,26 @@ it("uses the configured model for guard, router, dependent tools, and streamed c
 
   expect(events.at(-1)).toBe("request.completed");
   expect(bodies).toHaveLength(7);
+
+  const actionResponse = bodies.at(-1)!;
+
+  expect(actionResponse.text).toMatchObject({
+    format: { name: "action_response" },
+  });
+
+  expect(actionResponse.tools).toBeUndefined();
+
+  expect(JSON.parse(actionResponse.input as string)).toMatchObject({
+    context: { currentMessage: payload.message },
+    receipt: { committedRevision: 1 },
+    cart: { items: [{ productId: seedProducts[0].id, quantity: 1 }] },
+    toolResults: expect.arrayContaining([
+      expect.objectContaining({
+        name: "choose_cheapest",
+        result: expect.objectContaining({ id: seedProducts[0].id }),
+      }),
+    ]),
+  });
 
   expect(
     bodies.every(
@@ -315,15 +322,16 @@ it("sends prior turns and the current cart to every agent and commits a follow-u
   const contexts: unknown[] = [];
 
   const result = {
+    text: "Blue Ceramic Mug costs $18.00.",
+    showCart: true,
     productIds: [seedProducts[2].id],
     clarification: null,
     missingInformation: false,
   };
 
-  const presentation = {
-    intro: "Here is your saved cart.",
-    productIds: result.productIds,
-    missingInformation: false,
+  const actionResponse = {
+    text: "Added one item to your cart.",
+    showCart: true,
   };
 
   const toolCalls = [
@@ -336,7 +344,7 @@ it("sends prior turns and the current cart to every agent and commits a follow-u
 
   let toolRound = 0;
 
-  server.post("/responses", async (request, reply) => {
+  server.post("/responses", async (request) => {
     const body = request.body as {
       model: string;
       stream?: boolean;
@@ -346,7 +354,7 @@ it("sends prior turns and the current cart to every agent and commits a follow-u
 
     const name = body.text.format.name;
 
-    if (name !== "presentation")
+    if (name !== "action_response")
       contexts.push(
         JSON.parse(
           typeof body.input === "string" ? body.input : body.input[0].content,
@@ -358,19 +366,12 @@ it("sends prior turns and the current cart to every agent and commits a follow-u
         ? { verdict: "UNCERTAIN" }
         : name === "route"
           ? { intent: "COMMAND", confidence: 1, clarification: null }
-          : name === "presentation"
-            ? presentation
+          : name === "action_response"
+            ? actionResponse
             : result,
       body.model,
       name === "agent_result" ? toolCalls[toolRound++] : undefined,
     );
-
-    if (body.stream)
-      return reply
-        .type("text/event-stream")
-        .send(
-          `event: response.output_text.delta\ndata: ${JSON.stringify({ type: "response.output_text.delta", delta: JSON.stringify(presentation) })}\n\nevent: response.completed\ndata: ${JSON.stringify({ type: "response.completed", response: output })}\n\n`,
-        );
 
     return output;
   });
@@ -555,3 +556,115 @@ it("gives guard and router named clarification candidates without treating them 
 
   expect(snapshot.pendingClarification).not.toHaveProperty("candidates");
 });
+
+it.each([
+  {
+    question: "What can you help me with?",
+    text: "I can compare products and help with your cart.",
+    product: null,
+  },
+  {
+    question: "What color is the Arc Desk Lamp?",
+    text: "It is sage green.",
+    product: seedProducts[0],
+  },
+])(
+  "delivers Knowledge's natural answer to $question without calling Composer or Action",
+  async ({ question, text, product }) => {
+    const server = Fastify();
+
+    servers.push(server);
+
+    const requests: string[] = [];
+
+    let retrieved = false;
+
+    server.post("/responses", async (request) => {
+      const body = request.body as {
+        model: string;
+        text: { format: { name: string } };
+        tools?: { name: string }[];
+      };
+
+      const name = body.text.format.name;
+
+      requests.push(name);
+      if (name === "guard") return response({ verdict: "VALID" }, body.model);
+      if (name === "route")
+        return response(
+          { intent: "QUESTION", confidence: 1, clarification: null },
+          body.model,
+        );
+      expect(name).toBe("agent_result");
+      expect(body.tools?.map((tool) => tool.name)).not.toContain("add_to_cart");
+
+      if (product && !retrieved) {
+        retrieved = true;
+
+        return response(null, body.model, {
+          name: "get_product",
+          arguments: { productId: product.id },
+        });
+      }
+
+      return response(
+        {
+          text,
+          showCart: false,
+          productIds: product ? [product.id] : [],
+          clarification: null,
+          missingInformation: false,
+        },
+        body.model,
+      );
+    });
+
+    await server.listen({ host: "127.0.0.1", port: 0 });
+
+    const address = server.server.address() as AddressInfo;
+
+    const provider = new OpenAIProvider(
+      readConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "test-model" }),
+      () => {},
+      new OpenAI({
+        apiKey: "test",
+        baseURL: `http://127.0.0.1:${address.port}`,
+        maxRetries: 0,
+      }),
+    );
+
+    const events: ServerEvent[] = [];
+
+    await runWorkflow(
+      {
+        message: question,
+        baseRevision: 0,
+        snapshot: snapshotOf(initialState()),
+      },
+      provider,
+      {
+        requestId: crypto.randomUUID(),
+        signal: new AbortController().signal,
+        maxToolCalls: 12,
+        commit: async () => {
+          throw new Error("Questions must not commit");
+        },
+        emit: (type, payload) => events.push({ type, payload } as ServerEvent),
+      },
+    );
+
+    expect(events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        content: text,
+        showCart: false,
+        cart: null,
+      }),
+    });
+
+    expect(events.at(-1)?.type).toBe("request.completed");
+    expect(requests).toHaveLength(product ? 4 : 3);
+    expect(requests).not.toContain("action_response");
+    expect(requests).not.toContain("presentation");
+  },
+);
