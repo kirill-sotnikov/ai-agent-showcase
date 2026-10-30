@@ -73,7 +73,7 @@ test("search → cheapest commit → partial remove → reload", async ({ page }
   );
 
   await expect(logs).toContainText(
-    "[agent=Composer] step.started Preparing verified response",
+    "[agent=Action] step.started Preparing response",
   );
 
   const cart = page.getByRole("region", { name: "Cart", exact: true });
@@ -474,4 +474,90 @@ test("Next navigation preserves the active request and one WebSocket connection"
   await completed(page);
   await expect(page.getByTestId("cart-total")).toContainText("$39.00");
   expect(connections).toBe(1);
+});
+
+test("answers questions in text and shows cart snapshots only when requested or acting", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const answers = page.locator('[data-message-role="assistant"]');
+
+  const previews = page.getByRole("region", {
+    name: "Cart at time of response",
+  });
+
+  await send(page, "What can you do?");
+  await completed(page);
+  await expect(answers.last()).toContainText("compare products");
+  await expect(previews).toHaveCount(0);
+
+  await send(page, "What color is the Arc Desk Lamp?");
+  await completed(page);
+  await expect(answers.last()).toHaveText(/Arc Desk Lamp is Sage\./);
+  await expect(answers.last()).not.toContainText("Aluminum");
+  await expect(previews).toHaveCount(0);
+
+  await send(page, "Add two of the blue mugs.");
+  await completed(page);
+  await expect(previews).toHaveCount(1);
+  await expect(previews.first()).toContainText("Blue Ceramic Mug × 2");
+  await expect(previews.first()).toContainText("Total: $36.00");
+
+  await send(page, "Show my cart");
+  await completed(page);
+  await expect(previews).toHaveCount(2);
+  await expect(previews.last()).toContainText("Blue Ceramic Mug × 2");
+
+  await send(page, "Remove one blue mug");
+  await completed(page);
+  await expect(previews).toHaveCount(3);
+  await expect(previews.last()).toContainText("Blue Ceramic Mug × 1");
+  await expect(previews.last()).toContainText("Total: $18.00");
+  await expect(previews.first()).toContainText("Blue Ceramic Mug × 2");
+
+  await page.reload();
+  await expect(previews).toHaveCount(3);
+  await expect(previews.first()).toContainText("Total: $36.00");
+  await expect(previews.last()).toContainText("Total: $18.00");
+
+  await page.screenshot({
+    path: "test-results/conversational-cart-desktop.png",
+    fullPage: true,
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(previews.last()).toBeVisible();
+
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+
+  await page.screenshot({
+    path: "test-results/conversational-cart-mobile.png",
+    fullPage: true,
+  });
+});
+
+test("a comparison follow-up answers the question without repeating a product card", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await send(page, "What is the price of the Linen Table Lamp?");
+  await completed(page);
+  await send(page, "Is it the cheapest lamp in the catalog?");
+  await completed(page);
+
+  const answer = page.locator('[data-message-role="assistant"]').last();
+
+  await expect(answer).toContainText("No. Arc Desk Lamp is the cheapest");
+  await expect(answer).not.toContainText("Soft ambient lighting");
+
+  await expect(
+    page.getByRole("region", { name: "Cart at time of response" }),
+  ).toHaveCount(0);
+
+  await expect(page.getByTestId("cart-total")).toHaveText("$0.00");
 });

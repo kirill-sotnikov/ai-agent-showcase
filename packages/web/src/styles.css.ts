@@ -1498,3 +1498,27 @@ globalStyle(
     },
   },
 );
+
+export const messageCart = style({
+  marginTop: "12px",
+  padding: "16px",
+  border: `1px solid ${vars.border}`,
+  borderRadius: "12px",
+  background: vars.surface,
+  fontSize: vars.minimumFontSize,
+});
+
+globalStyle(`${messageCart} h3`, { margin: "0 0 12px", fontSize: "15px" });
+
+globalStyle(`${messageCart} ul`, {
+  listStyle: "none",
+  padding: 0,
+  margin: "0 0 12px",
+});
+
+globalStyle(`${messageCart} li`, {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "16px",
+  marginBottom: "8px",
+});

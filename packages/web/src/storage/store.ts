@@ -14,6 +14,7 @@ import {
 } from "@shop/shared/contracts";
 import {
   cartFingerprint,
+  cartView,
   commitSummary,
   DomainError,
   setQuantity,
@@ -382,6 +383,11 @@ export class WorkspaceStore {
           requestId: event.requestId,
           role: "assistant",
           content: event.payload.content,
+          showCart: event.payload.showCart ?? false,
+          // Local persistence is authoritative, including when the server lost the ACK.
+          cart: event.payload.showCart
+            ? cartView(state.cart, state.products)
+            : null,
           timestamp: event.timestamp,
           incomplete: false,
         });
@@ -429,6 +435,8 @@ export class WorkspaceStore {
         requestId,
         role: "assistant",
         content: `${receipt.summary} Response interrupted.`,
+        showCart: true,
+        cart: cartView(state.cart, state.products),
         timestamp: new Date().toISOString(),
         incomplete: false,
       });

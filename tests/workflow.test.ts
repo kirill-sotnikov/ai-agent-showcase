@@ -24,7 +24,7 @@ async function execute(
   message: string,
   provider: Provider = new FakeProvider(),
   mutate?: (snapshot: ReturnType<typeof snapshotOf>) => void,
-  options: Partial<Pick<WorkflowOptions, "signal" | "emit">> = {},
+  options: Partial<Pick<WorkflowOptions, "signal" | "emit" | "commit">> = {},
 ) {
   const snapshot = snapshotOf(initialState());
 
@@ -41,18 +41,20 @@ async function execute(
       events.push({ type, payload });
       options.emit?.(type, payload);
     },
-    commit: async (proposal) => {
-      proposals.push(proposal);
+    commit:
+      options.commit ??
+      (async (proposal) => {
+        proposals.push(proposal);
 
-      return {
-        requestId: crypto.randomUUID(),
-        proposalId: proposal.proposalId,
-        baseRevision: 0,
-        committedRevision: 1,
-        fingerprint: proposal.fingerprint,
-        summary: commitSummary(proposal.nextCart, snapshot.products),
-      };
-    },
+        return {
+          requestId: crypto.randomUUID(),
+          proposalId: proposal.proposalId,
+          baseRevision: 0,
+          committedRevision: 1,
+          fingerprint: proposal.fingerprint,
+          summary: commitSummary(proposal.nextCart, snapshot.products),
+        };
+      }),
   });
 
   return { events, proposals };
@@ -71,6 +73,284 @@ function deferred<T>() {
 }
 
 describe("controlled workflow", () => {
+  it.each(["Hello", "Thank you", "What can you do?"])(
+    "answers %s as text without tools, cart changes, or a second model call",
+    async (question) => {
+      const provider = new FakeProvider();
+
+      provider.completeAction = vi.fn(provider.completeAction);
+
+      const result = await execute(question, provider);
+
+      expect(result.events).toContainEqual({
+        type: "assistant.message",
+        payload: expect.objectContaining({
+          content: expect.any(String),
+          showCart: false,
+          cart: null,
+        }),
+      });
+
+      const answer = result.events.find(
+        (event) => event.type === "assistant.message",
+      )!.payload;
+
+      expect(answer).not.toMatchObject({
+        content: expect.stringContaining("No matching products"),
+      });
+
+      expect(
+        result.events.filter((event) => event.type === "tool.started"),
+      ).toEqual([]);
+
+      expect(result.proposals).toEqual([]);
+      expect(provider.completeAction).not.toHaveBeenCalled();
+      expect(result.events.at(-1)?.type).toBe("request.completed");
+    },
+  );
+
+  it("preserves a focused product answer instead of rendering all catalog fields", async () => {
+    const result = await execute("What color is the Arc Desk Lamp?");
+
+    expect(result.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        content: "Arc Desk Lamp is Sage.",
+        showCart: false,
+        cart: null,
+      }),
+    });
+
+    expect(result.proposals).toEqual([]);
+  });
+
+  it.each([true, false])(
+    "passes Knowledge's arbitrary text and showCart=%s to the UI",
+    async (showCart) => {
+      const provider = new FakeProvider();
+
+      const text =
+        "You can ask me to compare prices before deciding what to buy.";
+
+      provider.execute = async () => ({
+        text,
+        showCart,
+        productIds: [],
+        clarification: null,
+        missingInformation: false,
+      });
+
+      const result = await execute("How can you help me choose?", provider);
+
+      expect(result.events).toContainEqual({
+        type: "assistant.message",
+        payload: expect.objectContaining({
+          content: text,
+          showCart,
+          cart: showCart ? { items: [], totalMinor: 0 } : null,
+        }),
+      });
+
+      expect(result.proposals).toEqual([]);
+    },
+  );
+
+  it("answers a cart-price question with quantities and the unchanged saved cart", async () => {
+    const result = await execute(
+      "What is the price of lamps in my cart?",
+      new FakeProvider(),
+      (snapshot) => {
+        snapshot.cart.items = [{ productId: seedProducts[0].id, quantity: 2 }];
+      },
+    );
+
+    expect(result.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        content:
+          "Arc Desk Lamp costs $39.00 each; 2 in your cart, $78.00 total.",
+        showCart: true,
+        cart: {
+          items: [
+            {
+              productId: seedProducts[0].id,
+              name: "Arc Desk Lamp",
+              quantity: 2,
+              priceMinor: 3900,
+            },
+          ],
+          totalMinor: 7800,
+        },
+      }),
+    });
+
+    expect(result.proposals).toEqual([]);
+  });
+
+  it("answers a follow-up comparison rather than repeating the previous product", async () => {
+    const result = await execute(
+      "Is it the cheapest lamp in the catalog?",
+      new FakeProvider(),
+      (snapshot) => {
+        snapshot.messages = [
+          {
+            id: crypto.randomUUID(),
+            requestId: crypto.randomUUID(),
+            role: "assistant",
+            content: "Linen Table Lamp costs $48.00.",
+            timestamp: new Date().toISOString(),
+            incomplete: false,
+          },
+        ];
+      },
+    );
+
+    expect(result.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        content:
+          "No. Arc Desk Lamp is the cheapest of the products compared at $39.00.",
+        showCart: false,
+      }),
+    });
+
+    expect(result.proposals).toEqual([]);
+  });
+
+  it("distinguishes an absent cart product from an empty cart", async () => {
+    const result = await execute(
+      "What is the price of lamps in my cart?",
+      new FakeProvider(),
+      (snapshot) => {
+        snapshot.cart.items = [{ productId: seedProducts[2].id, quantity: 1 }];
+      },
+    );
+
+    expect(result.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        content: "There are no matching products in your cart.",
+        showCart: true,
+        cart: expect.objectContaining({ totalMinor: 1800 }),
+      }),
+    });
+  });
+
+  it("waits for ACK before Action writes the answer and forces the saved cart to be shown", async () => {
+    const ack = deferred<Awaited<ReturnType<WorkflowOptions["commit"]>>>();
+    const provider = new FakeProvider();
+
+    provider.completeAction = vi.fn<FakeProvider["completeAction"]>(
+      async (_context, _result, outcome) => {
+        expect(outcome.receipt).not.toBeNull();
+
+        expect(outcome.cart.items).toEqual([
+          { productId: seedProducts[0].id, quantity: 1 },
+        ]);
+
+        expect(outcome.toolResults.map((entry) => entry.name)).toContain(
+          "add_to_cart",
+        );
+
+        return { text: "Added one Arc Desk Lamp.", showCart: false };
+      },
+    );
+
+    const commit = vi.fn(() => ack.promise);
+    const emit = vi.fn();
+
+    const running = execute("Add the Arc Desk Lamp", provider, undefined, {
+      commit,
+      emit,
+    });
+
+    await vi.waitFor(() => expect(commit).toHaveBeenCalledOnce());
+    expect(provider.completeAction).not.toHaveBeenCalled();
+
+    expect(emit.mock.calls.some(([type]) => type === "assistant.message")).toBe(
+      false,
+    );
+
+    ack.resolve({
+      requestId: crypto.randomUUID(),
+      proposalId: crypto.randomUUID(),
+      baseRevision: 0,
+      committedRevision: 1,
+      fingerprint: "a".repeat(64),
+      summary: "Cart saved.",
+    });
+
+    const result = await running;
+
+    expect(result.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        content: "Added one Arc Desk Lamp.",
+        showCart: true,
+        cart: expect.objectContaining({ totalMinor: 3900 }),
+      }),
+    });
+  });
+
+  it("shows the saved cart when an Action needs clarification or fails to save", async () => {
+    const ambiguous = await execute("Add the headphones.");
+
+    expect(ambiguous.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        showCart: true,
+        cart: { items: [], totalMinor: 0 },
+      }),
+    });
+
+    const provider = new FakeProvider();
+
+    provider.completeAction = vi.fn(provider.completeAction);
+
+    const rejected = await execute(
+      "Add the Arc Desk Lamp",
+      provider,
+      undefined,
+      {
+        commit: async () => {
+          throw new DomainError("COMMIT_REJECTED", "Unable to save changes.");
+        },
+      },
+    );
+
+    expect(rejected.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        showCart: true,
+        cart: { items: [], totalMinor: 0 },
+        content: expect.not.stringContaining("Cart saved."),
+      }),
+    });
+
+    expect(provider.completeAction).not.toHaveBeenCalled();
+  });
+
+  it("shows the unchanged cart for an Action that sets the existing quantity", async () => {
+    const result = await execute(
+      "Set the mug quantity to two",
+      new FakeProvider(),
+      (snapshot) => {
+        snapshot.cart.items = [{ productId: seedProducts[2].id, quantity: 2 }];
+      },
+    );
+
+    expect(result.proposals).toEqual([]);
+
+    expect(result.events).toContainEqual({
+      type: "assistant.message",
+      payload: expect.objectContaining({
+        showCart: true,
+        content: expect.stringContaining("Your cart is unchanged."),
+        cart: expect.objectContaining({ totalMinor: 3600 }),
+      }),
+    });
+  });
+
   it.each(["guard", "router"] as const)(
     "starts both checks together and waits for both when %s finishes first",
     async (first) => {
@@ -186,7 +466,7 @@ describe("controlled workflow", () => {
         stage: "awaiting_commit",
         agent: "orchestrator",
       }),
-      expect.objectContaining({ stage: "responding", agent: "composer" }),
+      expect.objectContaining({ stage: "responding", agent: "action" }),
       expect.objectContaining({ stage: "completed", agent: "orchestrator" }),
     ]);
 
@@ -228,16 +508,9 @@ describe("controlled workflow", () => {
     });
   });
 
-  it("does not let composition add a missing-specifications notice to a fulfilled cheapest-product request", async () => {
-    class NoisyComposer extends FakeProvider {
-      override async present(...args: Parameters<FakeProvider["present"]>) {
-        return { ...(await super.present(...args)), missingInformation: true };
-      }
-    }
-
+  it("answers a fulfilled cheapest-product request without unrelated missing specifications", async () => {
     const result = await execute(
       "find cheapest product in whole catalog and add to cart",
-      new NoisyComposer(),
     );
 
     expect(result.proposals[0].nextCart.items).toEqual([
@@ -274,16 +547,7 @@ describe("controlled workflow", () => {
   ])(
     "preserves the missing-information notice for %s",
     async (message, cartStatus) => {
-      class OptimisticComposer extends FakeProvider {
-        override async present(...args: Parameters<FakeProvider["present"]>) {
-          return {
-            ...(await super.present(...args)),
-            missingInformation: false,
-          };
-        }
-      }
-
-      const result = await execute(message, new OptimisticComposer());
+      const result = await execute(message);
 
       expect(result.events).toContainEqual({
         type: "assistant.message",
@@ -355,7 +619,7 @@ describe("controlled workflow", () => {
     provider.guard = async () => ({ verdict: "SPAM" });
     provider.route = vi.fn(() => route.promise);
     provider.execute = vi.fn(provider.execute);
-    provider.present = vi.fn(provider.present);
+    provider.completeAction = vi.fn(provider.completeAction);
 
     const result = await execute("spam", provider);
 
@@ -363,7 +627,7 @@ describe("controlled workflow", () => {
     expect(provider.route).toHaveBeenCalledOnce();
     expect(vi.mocked(provider.route).mock.calls[0][1].aborted).toBe(true);
     expect(provider.execute).not.toHaveBeenCalled();
-    expect(provider.present).not.toHaveBeenCalled();
+    expect(provider.completeAction).not.toHaveBeenCalled();
 
     expect(result.events).toContainEqual({
       type: "step.completed",
@@ -562,6 +826,8 @@ describe("controlled workflow", () => {
           productIds: [seedProducts[0].id],
           clarification: null,
           missingInformation: false,
+          text: "Product information.",
+          showCart: false,
         };
       }
     }
@@ -594,6 +860,8 @@ describe("controlled workflow", () => {
           productIds: [seedProducts[0].id],
           clarification: "Which second product?",
           missingInformation: false,
+          text: "Product information.",
+          showCart: false,
         };
       }
     }
@@ -604,17 +872,20 @@ describe("controlled workflow", () => {
   });
 
   it("falls back to the receipt if final generation fails after commit", async () => {
-    class BrokenComposer extends FakeProvider {
-      override async present(): Promise<never> {
+    class BrokenActionResponse extends FakeProvider {
+      override async completeAction(): Promise<never> {
         throw new Error("Provider failure");
       }
     }
 
-    const result = await execute("Add the Arc Desk Lamp", new BrokenComposer());
+    const result = await execute(
+      "Add the Arc Desk Lamp",
+      new BrokenActionResponse(),
+    );
 
     expect(result.events.at(-1)).toMatchObject({
       type: "request.failed",
-      payload: { agent: "composer", cartStatus: "committed" },
+      payload: { agent: "action", cartStatus: "committed" },
     });
 
     expect(
@@ -657,6 +928,8 @@ describe("controlled workflow", () => {
           productIds: [crypto.randomUUID()],
           clarification: null,
           missingInformation: false,
+          text: "Product information.",
+          showCart: false,
         };
       }
     }

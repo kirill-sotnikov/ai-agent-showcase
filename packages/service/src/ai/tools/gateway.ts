@@ -25,6 +25,12 @@ export class ToolGateway {
 
   readonly retrievedIds = new Set<string>();
 
+  readonly results: {
+    name: GatewayTool;
+    arguments: unknown;
+    result: unknown;
+  }[] = [];
+
   calls = 0;
 
   constructor(
@@ -134,6 +140,13 @@ export class ToolGateway {
     }
 
     this.signal.throwIfAborted();
+
+    this.results.push({
+      name: tool,
+      arguments: args.data,
+      result: structuredClone(result),
+    });
+
     this.onTool("completed", details, performance.now() - startedAt);
 
     return result;

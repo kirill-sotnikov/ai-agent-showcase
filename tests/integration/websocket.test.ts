@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import type { AddressInfo } from "node:net";
+import { seedProducts } from "@shop/shared/defaults";
 import {
   serverEventSchema,
   type ClientCommand,
@@ -178,9 +179,14 @@ describe("real WebSocket protocol", () => {
       "unchanged",
     );
 
-    expect(
-      peer.events.some((event) => event.type === "assistant.message"),
-    ).toBe(false);
+    const answer = await peer.wait("assistant.message");
+
+    expect(answer.payload).toMatchObject({
+      showCart: true,
+      cart: { items: [], totalMinor: 0 },
+    });
+
+    expect(answer.payload.content).not.toContain("Cart saved.");
   });
 
   it("retains the browser receipt when ACK is lost", async () => {
@@ -205,9 +211,31 @@ describe("real WebSocket protocol", () => {
 
     await store.commit(requestId, proposed.payload);
 
-    expect((await peer.wait("request.failed")).payload.error?.code).toBe(
-      "COMMIT_TIMEOUT",
-    );
+    const failed = await peer.wait("request.failed");
+
+    expect(failed.payload.error?.code).toBe("COMMIT_TIMEOUT");
+
+    const answer = await peer.wait("assistant.message");
+
+    // The server did not receive ACK, but the browser knows the actual saved cart.
+    expect(answer.payload.cart?.items).toEqual([]);
+    await store.record(answer);
+    await store.record(failed);
+
+    expect(store.read()!.messages.at(-1)).toMatchObject({
+      showCart: true,
+      cart: {
+        items: [
+          {
+            productId: seedProducts[0].id,
+            quantity: 1,
+            priceMinor: 3900,
+            name: "Arc Desk Lamp",
+          },
+        ],
+        totalMinor: 3900,
+      },
+    });
 
     await store.initialize();
     expect(store.read()!.activeRun?.cartStatus).toBe("committed");

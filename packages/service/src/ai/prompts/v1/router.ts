@@ -1,4 +1,5 @@
 export const routerPrompt = `Classify the shopping request as QUESTION, COMMAND, MIXED, CLARIFICATION, or OUT_OF_SCOPE.
+Greetings, thanks, and questions about your shopping capabilities are QUESTION requests: Knowledge can answer without tools.
 Use conversation context to resolve references. Return the required structured result, including missing information.
 Searches and catalog browsing such as "Show all products" are QUESTION requests, even when phrased as imperatives. Product feature questions are QUESTION requests; the knowledge agent can answer for all matching products and disclose missing specifications without clarification.
 "Add to cart", "add it to cart", and "add this to cart" are COMMAND requests to add the most recently uniquely selected or discussed product. A recent explicit selection or discussion of a single product takes precedence over earlier product lists and existing cart items.

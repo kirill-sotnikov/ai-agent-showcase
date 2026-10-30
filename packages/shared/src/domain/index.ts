@@ -43,6 +43,19 @@ export function cartTotal(cart: Cart, products: Product[]) {
   );
 }
 
+export function cartView(cart: Cart, products: Product[]) {
+  const totalMinor = cartTotal(cart, products);
+
+  return {
+    items: cart.items.map((item) => {
+      const product = products.find((entry) => entry.id === item.productId)!;
+
+      return { ...item, name: product.name, priceMinor: product.priceMinor };
+    }),
+    totalMinor,
+  };
+}
+
 export function quantity(cart: Cart, productId: string) {
   return cart.items.find((item) => item.productId === productId)?.quantity ?? 0;
 }

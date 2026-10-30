@@ -1,7 +1,14 @@
 import type { Product } from "@shop/shared/contracts";
+import { formatMoney } from "@shop/shared/money";
 import { normalize } from "../../domain/catalog.js";
 import type { ToolGateway } from "../tools/gateway.js";
-import type { AgentContext, AgentResult, Provider, Route } from "./types.js";
+import type {
+  ActionOutcome,
+  AgentContext,
+  AgentResult,
+  Provider,
+  Route,
+} from "./types.js";
 
 const words: Record<string, number> = {
   zero: 0,
@@ -77,7 +84,47 @@ export class FakeProvider implements Provider {
     const pending = context.snapshot.pendingClarification;
     const choice = pending ? normalize(context.message) : "";
 
+    const base = {
+      text: "Please clarify your request.",
+      showCart: role === "action",
+    };
+
+    if (role === "knowledge") {
+      const conversational = /^(hi|hello|hey)[!. ]*$/.test(text)
+        ? "Hello! What would you like to know about the products?"
+        : /^(thanks|thank you)[!. ]*$/.test(text)
+          ? "You're welcome!"
+          : /what can you (do|help)|how (do|can) (you|i)|can you help/.test(
+                text,
+              )
+            ? "I can help you find and compare products, answer questions about the catalog, and update your cart when you ask."
+            : null;
+
+      if (conversational)
+        return {
+          ...base,
+          text: conversational,
+          productIds: [],
+          clarification: null,
+          missingInformation: false,
+        };
+    }
+
+    const cartQuestion = role === "knowledge" && /\bcart\b/.test(text);
+
     let products: Product[] = [];
+
+    if (cartQuestion) {
+      await gateway.call("get_cart", {});
+      for (const item of context.snapshot.cart.items)
+        products.push(
+          (await gateway.call("get_product", {
+            productId: item.productId,
+          })) as Product,
+        );
+      if (/\blamps?\b/.test(text))
+        products = products.filter((product) => /lamp/i.test(product.name));
+    }
 
     if (pending && pending.baseRevision === context.baseRevision) {
       products = context.snapshot.products.filter(
@@ -97,7 +144,7 @@ export class FakeProvider implements Provider {
         await gateway.call("get_product", { productId: product.id });
     }
 
-    if (products.length === 0) {
+    if (products.length === 0 && !cartQuestion) {
       const stopWords = new Set([
         "a",
         "an",
@@ -180,11 +227,14 @@ export class FakeProvider implements Provider {
         !pending
       )
         return {
+          ...base,
           productIds: [],
           clarification: "Which product would you like to explore?",
           missingInformation: false,
         };
     }
+
+    const comparedProducts = [...products];
 
     if (/\bcheapest\b/.test(text) && products.length > 0)
       products = [
@@ -201,6 +251,7 @@ export class FakeProvider implements Provider {
           pending.candidateIds.length > 1)
       )
         return {
+          ...base,
           productIds: products.map((product) => product.id),
           clarification:
             products.length === 0
@@ -231,6 +282,7 @@ export class FakeProvider implements Provider {
 
         if (!match)
           return {
+            ...base,
             productIds: [productId],
             clarification: "What quantity would you like?",
             missingInformation: false,
@@ -252,29 +304,74 @@ export class FakeProvider implements Provider {
       }
     }
 
+    const missingInformation =
+      /\b(waterproof|warranty|weight|compatible)\b/.test(text);
+
+    let answer = products.length
+      ? products
+          .map((product) => {
+            if (/\bcolou?r\b/.test(text))
+              return `${product.name} is ${product.attributes.color ?? "not listed with a color"}.`;
+
+            const quantity = cartQuestion
+              ? context.snapshot.cart.items.find(
+                  (item) => item.productId === product.id,
+                )!.quantity
+              : 1;
+
+            return `${product.name} costs ${formatMoney(product.priceMinor)}${cartQuestion ? ` each; ${quantity} in your cart, ${formatMoney(product.priceMinor * quantity)} total` : ""}.`;
+          })
+          .join("\n")
+      : cartQuestion
+        ? context.snapshot.cart.items.length
+          ? "There are no matching products in your cart."
+          : "Your cart is empty."
+        : "No matching products were found in your catalog.";
+
+    if (/\bcheapest\b/.test(text) && products.length) {
+      const cheapest = products[0];
+
+      const mentioned = [...context.snapshot.messages]
+        .reverse()
+        .map((message) =>
+          comparedProducts.filter((product) =>
+            message.content.includes(product.name),
+          ),
+        )
+        .find((matches) => matches.length === 1)?.[0];
+
+      const subject = /\bit\b/.test(text) ? mentioned : undefined;
+
+      answer = `${subject ? (subject.id === cheapest.id ? "Yes. " : "No. ") : ""}${cheapest.name} is the cheapest of the products compared at ${formatMoney(cheapest.priceMinor)}.`;
+    }
+
+    if (missingInformation)
+      answer +=
+        "\n\nThe catalog does not include further specifications for that question.";
+
     return {
+      text: answer,
+      showCart: role === "action" || cartQuestion,
       productIds: products.map((product) => product.id),
       clarification: null,
-      missingInformation: /\b(waterproof|warranty|weight|compatible)\b/.test(
-        text,
-      ),
+      missingInformation,
     };
   }
 
-  async present(
+  async completeAction(
     _context: AgentContext,
     result: AgentResult,
-    committed: boolean,
+    outcome: ActionOutcome,
     signal: AbortSignal,
   ) {
     signal.throwIfAborted();
 
     return {
-      intro: committed
-        ? ("Here is your saved cart." as const)
-        : ("Here are the matching products." as const),
-      productIds: result.productIds,
-      missingInformation: result.missingInformation,
+      text: `${outcome.receipt?.summary ?? "Your cart is unchanged."}\n\n${result.text}`.slice(
+        0,
+        4000,
+      ),
+      showCart: true,
     };
   }
 }

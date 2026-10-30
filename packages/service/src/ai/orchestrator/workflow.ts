@@ -1,7 +1,7 @@
 import {
   agentResultSchema,
   guardResultSchema,
-  presentationSchema,
+  responseSchema,
   routeResultSchema,
   type AgentContext,
   type Provider,
@@ -26,7 +26,7 @@ import {
   DomainError,
   verifyProposal,
 } from "@shop/shared/domain";
-import { formatMoney } from "@shop/shared/money";
+import { composeResponse } from "./composer.js";
 import { ToolGateway } from "../tools/gateway.js";
 
 export type Emit = <T extends EventType>(
@@ -108,6 +108,8 @@ export async function runWorkflow(
   let stage: RunStage = "accepted";
   let agent: WorkflowAgent = "orchestrator";
   let receipt: CommitReceipt | null = null;
+  let source: "knowledge" | "action" = "knowledge";
+  let savedCart = context.snapshot.cart;
 
   const checks = new AbortController();
   const checkSignal = AbortSignal.any([signal, checks.signal]);
@@ -186,11 +188,16 @@ export async function runWorkflow(
     startStep(stage, label, agent);
   };
 
-  const message = (content: string) =>
-    emit("assistant.message", {
-      messageId: crypto.randomUUID(),
-      content: content.slice(0, 4000),
-    });
+  const message = (content: string, showCart = false) =>
+    emit(
+      "assistant.message",
+      composeResponse(
+        { text: content, showCart },
+        source,
+        savedCart,
+        context.snapshot.products,
+      ),
+    );
 
   const clarify = (question: string, productIds: string[]) => {
     const originalMessage =
@@ -272,6 +279,11 @@ export async function runWorkflow(
 
     const { route } = routed;
 
+    source =
+      route.intent === "COMMAND" || route.intent === "MIXED"
+        ? "action"
+        : "knowledge";
+
     if (
       route.clarification ||
       route.intent === "CLARIFICATION" ||
@@ -301,7 +313,7 @@ export async function runWorkflow(
       return;
     }
 
-    const role = route.intent === "QUESTION" ? "knowledge" : "action";
+    const role = source;
 
     move("executing", "Running shopping tools", role);
 
@@ -363,59 +375,43 @@ export async function runWorkflow(
       verifyProposal(proposal, context.snapshot);
       move("awaiting_commit", "Saving cart");
       receipt = await abortable(options.commit(proposal), signal);
+      savedCart = draft.cart;
       emit("cart.committed", receipt);
     }
 
-    move("responding", "Preparing verified response", "composer");
-
-    let content: string;
+    move(
+      "responding",
+      "Preparing response",
+      role === "action" ? "action" : "composer",
+    );
 
     try {
-      const presentation = presentationSchema.parse(
-        await abortable(
-          provider.present(context, result, !!receipt, signal),
-          signal,
-        ),
-      );
+      const response =
+        role === "action"
+          ? responseSchema.parse(
+              await abortable(
+                provider.completeAction(
+                  context,
+                  result,
+                  {
+                    receipt,
+                    cart: savedCart,
+                    products: [...gateway.retrievedIds].map((id) =>
+                      gateway.catalog.get(id),
+                    ),
+                    toolResults: gateway.results,
+                  },
+                  signal,
+                ),
+                signal,
+              ),
+            )
+          : result;
 
-      if (
-        presentation.productIds.length !== result.productIds.length ||
-        new Set(presentation.productIds).size !== result.productIds.length ||
-        presentation.productIds.some((id) => !result.productIds.includes(id))
-      )
-        throw new DomainError(
-          "MODEL_INVALID_OUTPUT",
-          "The final response referenced an unverified product.",
-        );
-
-      const facts = presentation.productIds
-        .map((id) => {
-          const product = gateway.catalog.get(id);
-
-          const attributes = Object.entries(product.attributes)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join("; ");
-
-          return `${product.name} — ${formatMoney(product.priceMinor)}. ${product.description}${attributes ? ` ${attributes}.` : ""}`;
-        })
-        .join("\n\n");
-
-      // Product claims are rendered from retrieved fields. Free model prose cannot assert persistence or invent facts.
-      content = receipt
-        ? `${receipt.summary}\n\n${facts}`
-        : facts
-          ? `${presentation.intro === "Here is your saved cart." ? "Here is what the catalog says." : presentation.intro}\n\n${facts}`
-          : "No matching products were found in your catalog.";
-
-      // The execution agent checks the requested information against retrieved
-      // catalog data. Composition must not introduce a new missing-data claim.
-      if (result.missingInformation)
-        content +=
-          "\n\nThe catalog does not include further specifications for that question.";
+      message(response.text, response.showCart);
     } catch (error) {
       if (!receipt || signal.aborted) throw error;
-      content = `${receipt.summary} The final response could not be generated.`;
-      message(content);
+      message(`${receipt.summary} The final response could not be generated.`);
 
       emit("request.failed", {
         agent,
@@ -431,7 +427,6 @@ export async function runWorkflow(
       return;
     }
 
-    message(content);
     move("completed", "Request completed");
 
     emit("request.completed", {
@@ -455,6 +450,8 @@ export async function runWorkflow(
             );
 
     if (receipt) message(`${receipt.summary} Response interrupted.`);
+    else if (source === "action")
+      message(`I could not complete the request. ${failure.message}`);
 
     const cancelled = failure.code === "CANCELLED";
 
