@@ -10,6 +10,13 @@ const envSchema = z
     LLM_PROVIDER: z.enum(["openrouter", "fake"]).default("openrouter"),
     OPENROUTER_API_KEY: z.string().trim().optional(),
     MODEL: z.string().trim().optional(),
+    MODEL_FAST: z.string().trim().min(1).optional(),
+    MODEL_SIMPLE: z.string().trim().min(1).optional(),
+    DECISION_CONFIDENCE_THRESHOLD: z.coerce
+      .number()
+      .min(0.5)
+      .max(1)
+      .default(0.7),
     TG_NOTIFY_BOT_TOKEN: z.string().optional(),
     TG_NOTIFY_BOT_CHAT: z.string().optional(),
     ALLOWED_ORIGINS: z

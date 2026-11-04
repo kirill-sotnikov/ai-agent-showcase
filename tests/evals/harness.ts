@@ -60,13 +60,25 @@ export async function runShoppingScenario(
     ? new OpenRouterProvider(config)
     : new FakeProvider();
 
-  if (scenario.fault === "malformed-route")
-    provider.route = async () => ({ intent: "INVENTED" }) as never;
+  if (scenario.fault === "malformed-route") {
+    if (provider.assess)
+      provider.assess = async () =>
+        ({
+          guard: { verdict: "VALID" },
+          route: { intent: "INVENTED" },
+          complexity: "COMPLEX",
+        }) as never;
+    else provider.route = async () => ({ intent: "INVENTED" }) as never;
+  }
 
-  if (scenario.fault === "provider-failure")
-    provider.guard = async () => {
+  if (scenario.fault === "provider-failure") {
+    const fail = async (): Promise<never> => {
       throw new DomainError("MODEL_UNAVAILABLE", "The model is unavailable.");
     };
+
+    if (provider.assess) provider.assess = fail;
+    else provider.guard = fail;
+  }
 
   if (scenario.fault === "action-response-failure")
     provider.completeAction = async () => {

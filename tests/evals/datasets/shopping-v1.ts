@@ -1,5 +1,21 @@
 import type { ShoppingScenario } from "../types.js";
 
+const cartCapabilityDenials = [
+  "I can't add",
+  "I cannot add",
+  "I can't remove",
+  "I cannot remove",
+  "I can't modify",
+  "I cannot modify",
+  "I can't change",
+  "I cannot change",
+  "I can't make cart changes",
+  "I cannot make cart changes",
+  "unable to add",
+  "unable to remove",
+  "changes need to be made through the cart controls",
+];
+
 export const shoppingScenarios: ShoppingScenario[] = [
   {
     id: "text-greeting",
@@ -10,6 +26,25 @@ export const shoppingScenarios: ShoppingScenario[] = [
       productIds: [],
       showCart: false,
       noTools: true,
+      answerNotContains: cartCapabilityDenials,
+    },
+  },
+  {
+    id: "text-hi-after-products",
+    message: "hi",
+    previousAnswer:
+      "Cloud Wireless Headphones cost $89.00. Studio Wireless Headphones in your cart cost $129.00 and exceed your $100 budget.",
+    cart: [
+      { productId: "11111111-1111-4111-8111-111111111111", quantity: 1 },
+      { productId: "55555555-5555-4555-8555-555555555555", quantity: 1 },
+    ],
+    expected: {
+      outcome: "completed",
+      items: null,
+      productIds: [],
+      showCart: false,
+      noTools: true,
+      answerNotContains: cartCapabilityDenials,
     },
   },
   {
@@ -21,7 +56,8 @@ export const shoppingScenarios: ShoppingScenario[] = [
       productIds: [],
       showCart: false,
       noTools: true,
-      answerContains: ["cart", "products"],
+      answerNotContains: cartCapabilityDenials,
+      answerContains: ["cart", "products", "add", "remove"],
     },
   },
   {
@@ -260,6 +296,25 @@ export const shoppingScenarios: ShoppingScenario[] = [
         quantity: 2,
       },
     ],
+  },
+  {
+    id: "remove-all-items",
+    message: "remove all items from cart",
+    cart: [
+      { productId: "11111111-1111-4111-8111-111111111111", quantity: 3 },
+      { productId: "55555555-5555-4555-8555-555555555555", quantity: 1 },
+    ],
+    expected: { outcome: "completed", items: [], showCart: true },
+  },
+  {
+    id: "remove-all-empty-cart",
+    message: "remove all items from cart",
+    expected: {
+      outcome: "completed",
+      items: [],
+      showCart: true,
+      noTools: true,
+    },
   },
   {
     id: "remove-one",

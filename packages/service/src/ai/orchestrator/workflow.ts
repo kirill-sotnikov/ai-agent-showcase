@@ -1,11 +1,13 @@
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import {
   agentResultSchema,
+  assessmentResultSchema,
   guardResultSchema,
   responseSchema,
   routeResultSchema,
   type AgentResult,
   type AgentContext,
+  type Assessment,
   type Provider,
   type Route,
 } from "../llm/types.js";
@@ -272,35 +274,61 @@ export async function runWorkflow(
       move("checking", "Checking request", "guard");
       startStep("routing", "Understanding intent", "router");
 
-      // Routing is speculative and has no tools. Observe rejection immediately,
-      // but use its result only after Guard has allowed the request to continue.
-      routing = abortable(
-        Promise.resolve()
-          .then(() => {
-            checkSignal.throwIfAborted();
+      let guard: { verdict: "VALID" | "SPAM" | "UNCERTAIN" };
+      let assessmentTimings: Assessment["timings"];
+      let decisionDetails: Assessment["decision"];
 
-            return provider.route(context, checkSignal);
-          })
-          .then((result) => routeResultSchema.parse(result)),
-        checkSignal,
-      ).then(
-        (route) => {
-          finishStep("routing", "Intent identified", { route: route.intent });
+      if (provider.assess) {
+        const assessment = assessmentResultSchema.parse(
+          await abortable(provider.assess(context, checkSignal), checkSignal),
+        );
 
-          return { route };
-        },
-        (error: unknown) => {
-          finishStep("routing", "Intent check stopped");
+        guard = assessment.guard;
+        assessmentTimings = assessment.timings;
+        decisionDetails = assessment.decision;
+        context.complexity = assessment.complexity;
+        routing = Promise.resolve({ route: assessment.route });
 
-          return { error };
-        },
-      );
+        finishStep("routing", "Intent identified", {
+          route: assessment.route.intent,
+          ...assessmentTimings,
+          ...decisionDetails,
+        });
+      } else {
+        // Routing is speculative and has no tools. Observe rejection immediately,
+        // but use its result only after Guard has allowed the request to continue.
+        routing = abortable(
+          Promise.resolve()
+            .then(() => {
+              checkSignal.throwIfAborted();
 
-      const guard = guardResultSchema.parse(
-        await abortable(provider.guard(context, checkSignal), checkSignal),
-      );
+              return provider.route(context, checkSignal);
+            })
+            .then((result) => routeResultSchema.parse(result)),
+          checkSignal,
+        ).then(
+          (route) => {
+            finishStep("routing", "Intent identified", { route: route.intent });
 
-      finishStep("checking", undefined, { guardVerdict: guard.verdict });
+            return { route };
+          },
+          (error: unknown) => {
+            finishStep("routing", "Intent check stopped");
+
+            return { error };
+          },
+        );
+
+        guard = guardResultSchema.parse(
+          await abortable(provider.guard(context, checkSignal), checkSignal),
+        );
+      }
+
+      finishStep("checking", undefined, {
+        guardVerdict: guard.verdict,
+        ...assessmentTimings,
+        ...decisionDetails,
+      });
 
       // Uncertainty about a short follow-up belongs to routing, where references
       // can be resolved and a focused clarification can be requested if needed.
@@ -333,20 +361,31 @@ export async function runWorkflow(
           ? "action"
           : "knowledge";
 
-      if (
-        route.clarification ||
-        route.intent === "CLARIFICATION" ||
-        route.confidence < 0.6
-      ) {
-        clarify(
-          route.clarification ?? "Which product or cart change do you mean?",
-          [],
-        );
+      if (route.clarification) {
+        clarify(route.clarification, []);
 
         return { stop: true };
       }
 
-      if (route.intent === "OUT_OF_SCOPE") {
+      const uncertainMutation =
+        route.confidence < 0.6 &&
+        (route.intent === "COMMAND" || route.intent === "MIXED");
+
+      if (route.intent === "CLARIFICATION" || uncertainMutation) {
+        if (provider.assess) {
+          // Decision models choose labels. Knowledge retrieves candidates and
+          // writes the actual question without receiving cart mutation tools.
+          context.needsClarification = true;
+          context.complexity = "COMPLEX";
+          outcome.source = "knowledge";
+        } else {
+          clarify("Which product or cart change do you mean?", []);
+
+          return { stop: true };
+        }
+      }
+
+      if (route.intent === "OUT_OF_SCOPE" && !context.needsClarification) {
         move("responding", "Preparing response");
 
         message(
@@ -379,6 +418,12 @@ export async function runWorkflow(
         throw new DomainError(
           "MODEL_INVALID_OUTPUT",
           "The model referenced a product without retrieving it.",
+        );
+
+      if (context.needsClarification && !result.clarification)
+        throw new DomainError(
+          "MODEL_INVALID_OUTPUT",
+          "The model did not provide the required clarification.",
         );
 
       if (result.clarification) {

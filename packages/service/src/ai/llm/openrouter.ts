@@ -11,6 +11,11 @@ import {
 } from "@langchain/core/messages";
 import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import { z } from "zod";
+import { modelContext } from "./context.js";
+import { DecisionsClient } from "./decisions.js";
+import { normalizeToolArguments } from "./tool-arguments.js";
+import { parseAgentMessage, parseAgentResult } from "./agent-result.js";
+import { assessmentPrompt } from "../prompts/v1/assessment.js";
 import { DomainError } from "@shop/shared/domain";
 import type { Config } from "../../config/index.js";
 import { actionPrompt } from "../prompts/v1/action.js";
@@ -22,6 +27,8 @@ import { sharedPolicy } from "../prompts/v1/shared.js";
 import type { GatewayTool, ToolGateway } from "../tools/gateway.js";
 import {
   agentResultSchema,
+  assessmentSchema,
+  type Assessment,
   guardResultSchema,
   responseSchema,
   routeResultSchema,
@@ -35,11 +42,16 @@ export interface Usage {
   inputTokens: number;
   outputTokens: number;
   calls: number;
+  byModel: Record<
+    string,
+    { inputTokens: number; outputTokens: number; calls: number }
+  >;
 }
 
 const ExecutionState = Annotation.Root({
   messages: Annotation<BaseMessage[]>,
   result: Annotation<AgentResult | null>,
+  needsRepair: Annotation<boolean>,
 });
 
 const finishTool = "finish_response";
@@ -67,42 +79,158 @@ const toolDescriptions: Record<GatewayTool, string> = {
   set_cart_quantity:
     "Set the total quantity in the draft cart; zero removes the line. First retrieve the product with search_products or get_product, including for a product already in the cart.",
   remove_from_cart:
-    "Remove units from the draft cart, or the whole line when quantity is null. First retrieve the product with search_products or get_product.",
+    "Remove units from the draft cart. Send quantity as a positive integer for a partial removal, or explicitly null to remove the entire line. First retrieve the product with search_products or get_product.",
 };
 
 export class OpenRouterProvider implements Provider {
   private readonly model: ChatOpenRouter;
 
-  readonly usage: Usage = { inputTokens: 0, outputTokens: 0, calls: 0 };
+  private readonly simpleModel: ChatOpenRouter;
+
+  readonly assess?: (
+    context: AgentContext,
+    signal: AbortSignal,
+  ) => Promise<Assessment>;
+
+  readonly usage: Usage = {
+    inputTokens: 0,
+    outputTokens: 0,
+    calls: 0,
+    byModel: {},
+  };
 
   constructor(
     readonly config: Config,
-    readonly onUsage: (usage: Usage) => void = () => {},
+    readonly onUsage: (usage: Usage, model: string) => void = () => {},
     baseURL?: string,
   ) {
-    this.model = new ChatOpenRouter({
-      baseURL,
-      apiKey: config.OPENROUTER_API_KEY,
-      model: config.MODEL,
-      maxRetries: 0,
-      maxTokens: config.MAX_OUTPUT_TOKENS,
-      provider: { require_parameters: true },
-      siteName: "AI Agent Showcase",
-    });
+    const createModel = (model: string | undefined) =>
+      new ChatOpenRouter({
+        baseURL,
+        apiKey: config.OPENROUTER_API_KEY,
+        model,
+        maxRetries: 0,
+        maxTokens: config.MAX_OUTPUT_TOKENS,
+        provider: { require_parameters: true },
+        siteName: "AI Agent Showcase",
+      });
+
+    this.model = createModel(config.MODEL);
+
+    this.simpleModel =
+      config.MODEL_SIMPLE && config.MODEL_SIMPLE !== config.MODEL
+        ? createModel(config.MODEL_SIMPLE)
+        : this.model;
+
+    if (config.MODEL_FAST) {
+      const decisions = new DecisionsClient(
+        config,
+        (model) => this.reserveCall(model),
+        (model, input, output) => this.trackUsage(model, input, output),
+        baseURL,
+      );
+
+      this.assess = async (context, signal) => {
+        const decisionStarted = performance.now();
+        const decision = await decisions.assess(context, signal);
+        const decisionMs = Math.round(performance.now() - decisionStarted);
+        const threshold = config.DECISION_CONFIDENCE_THRESHOLD;
+
+        const verificationReasons: NonNullable<
+          Assessment["decision"]
+        >["verificationReasons"] = [];
+
+        if (decision.guard.verdict === "UNCERTAIN")
+          verificationReasons.push("guard_uncertain");
+        if (decision.guardConfidence < threshold)
+          verificationReasons.push("guard_confidence");
+        if (decision.route.confidence < threshold)
+          verificationReasons.push("route_confidence");
+
+        const diagnostics = {
+          guardConfidence: decision.guardConfidence,
+          routeConfidence: decision.route.confidence,
+          complexityConfidence: decision.complexityConfidence,
+          decisionThreshold: threshold,
+          decisionRoute: decision.route.intent,
+          verificationReasons,
+        };
+
+        if (verificationReasons.length === 0)
+          return {
+            ...assessmentSchema.parse({
+              guard: decision.guard,
+              route: decision.route,
+              // Complexity only chooses the execution model. If uncertain,
+              // conservatively use MODEL without repeating Guard and Router.
+              complexity:
+                decision.complexityConfidence >= threshold
+                  ? decision.complexity
+                  : "COMPLEX",
+            }),
+            decision: diagnostics,
+            timings: {
+              decisionMs,
+              verificationMs: 0,
+              verificationUsed: false,
+            },
+          };
+
+        const verificationStarted = performance.now();
+
+        const verified = await this.structured(
+          "assessment",
+          assessmentPrompt,
+          this.context(context),
+          assessmentSchema,
+          signal,
+          this.model,
+          context.message,
+        );
+
+        return {
+          ...verified,
+          decision: diagnostics,
+          // Guard uncertainty does not change the independently chosen route.
+          // Uncertain decisions use the main model for execution as well.
+          complexity: "COMPLEX",
+          timings: {
+            decisionMs,
+            verificationMs: Math.round(performance.now() - verificationStarted),
+            verificationUsed: true,
+          },
+        };
+      };
+    }
   }
 
-  private async invoke(
-    messages: BaseMessage[],
-    options: ChatOpenRouterCallOptions,
-    signal: AbortSignal,
-  ): Promise<AIMessage> {
-    signal.throwIfAborted();
+  private reserveCall(model: string) {
     if (this.usage.calls >= this.config.MAX_LLM_CALLS)
       throw new DomainError(
         "LIMIT_EXCEEDED",
         "The model call budget for this request was exceeded.",
       );
     this.usage.calls++;
+    this.usage.byModel[model] ??= { inputTokens: 0, outputTokens: 0, calls: 0 };
+    this.usage.byModel[model].calls++;
+  }
+
+  private trackUsage(model: string, input: number, output: number) {
+    this.usage.inputTokens += input;
+    this.usage.outputTokens += output;
+    this.usage.byModel[model].inputTokens += input;
+    this.usage.byModel[model].outputTokens += output;
+    this.onUsage(this.usage, model);
+  }
+
+  private async invoke(
+    messages: BaseMessage[],
+    options: ChatOpenRouterCallOptions,
+    signal: AbortSignal,
+    model = this.model,
+  ): Promise<AIMessage> {
+    signal.throwIfAborted();
+    this.reserveCall(model.model);
 
     const timeout = AbortSignal.any([
       signal,
@@ -110,14 +238,17 @@ export class OpenRouterProvider implements Provider {
     ]);
 
     try {
-      const response = await this.model.invoke(messages, {
+      const response = await model.invoke(messages, {
         ...options,
         signal: timeout,
       });
 
-      this.usage.inputTokens += response.usage_metadata?.input_tokens ?? 0;
-      this.usage.outputTokens += response.usage_metadata?.output_tokens ?? 0;
-      this.onUsage(this.usage);
+      this.trackUsage(
+        model.model,
+        response.usage_metadata?.input_tokens ?? 0,
+        response.usage_metadata?.output_tokens ?? 0,
+      );
+
       if (
         response.invalid_tool_calls?.length ||
         !["stop", "tool_calls"].includes(
@@ -170,37 +301,7 @@ export class OpenRouterProvider implements Provider {
   }
 
   private context(context: AgentContext) {
-    const pending = context.snapshot.pendingClarification;
-
-    // All customization and history are data within a user envelope, never trusted instructions.
-    return JSON.stringify({
-      currentMessage: context.message,
-      baseRevision: context.baseRevision,
-      customIdentity: context.snapshot.settings.agentIdentity,
-      conversation: context.snapshot.messages.slice(-20),
-      pendingClarification: pending
-        ? {
-            ...pending,
-            candidates: context.snapshot.products
-              .filter((product) => pending.candidateIds.includes(product.id))
-              .map(({ id, name }) => ({ id, name })),
-          }
-        : null,
-      cart: {
-        items: context.snapshot.cart.items.map((item) => ({
-          ...item,
-          name: context.snapshot.products.find(
-            (product) => product.id === item.productId,
-          )?.name,
-        })),
-      },
-      productCount: context.snapshot.products.length,
-      catalogCategories: [
-        ...new Set(
-          context.snapshot.products.map((product) => product.category),
-        ),
-      ],
-    });
+    return JSON.stringify(modelContext(context));
   }
 
   private async structured<S extends z.ZodType>(
@@ -209,14 +310,20 @@ export class OpenRouterProvider implements Provider {
     input: string,
     schema: S,
     signal: AbortSignal,
+    model = this.model,
+    currentMessage?: string,
   ): Promise<z.infer<S>> {
     const response = await this.invoke(
       [
         new SystemMessage(`${sharedPolicy}\n${prompt}`),
         new HumanMessage(input),
+        ...(currentMessage === undefined
+          ? []
+          : [new HumanMessage(currentMessage)]),
       ],
       { response_format: responseFormat(name, schema) },
       signal,
+      model,
     );
 
     return this.parse(response, schema);
@@ -229,6 +336,8 @@ export class OpenRouterProvider implements Provider {
       this.context(context),
       guardResultSchema,
       signal,
+      this.model,
+      context.message,
     );
   }
 
@@ -239,6 +348,8 @@ export class OpenRouterProvider implements Provider {
       this.context(context),
       routeResultSchema,
       signal,
+      this.model,
+      context.message,
     );
   }
 
@@ -265,11 +376,14 @@ export class OpenRouterProvider implements Provider {
       function: {
         name: finishTool,
         description:
-          "Finish this request with the answer and retrieved product IDs. Call this alone once all necessary shopping tools are complete. Empty search results are a completed answer. Cart changes are still drafts awaiting application validation.",
+          "Return the final structured answer. Call this alone, including for greetings and capability questions that need no shopping tools. Include text, showCart, productIds, clarification, and missingInformation. Empty search results are a completed answer. Cart changes are still drafts awaiting application validation.",
         strict: true,
         parameters: z.toJSONSchema(agentResultSchema),
       },
     });
+
+    const model =
+      context.complexity === "SIMPLE" ? this.simpleModel : this.model;
 
     const graph = new StateGraph(ExecutionState)
       .addNode("agent", async (state) => {
@@ -280,6 +394,7 @@ export class OpenRouterProvider implements Provider {
             strict: true,
           },
           signal,
+          model,
         );
 
         const finalCall = response.tool_calls?.find(
@@ -287,26 +402,103 @@ export class OpenRouterProvider implements Provider {
         );
 
         if (finalCall) {
-          const result = agentResultSchema.safeParse(finalCall.args);
-
-          if (response.tool_calls?.length !== 1 || !result.success)
+          if (response.tool_calls?.length !== 1)
             throw new DomainError(
               "MODEL_INVALID_OUTPUT",
               "The model returned an invalid final result.",
             );
 
-          return {
-            messages: [...state.messages, response],
-            result: result.data,
-          };
+          try {
+            return {
+              messages: [...state.messages, response],
+              result: parseAgentResult(finalCall.args),
+              needsRepair: false,
+            };
+          } catch {
+            return {
+              messages: [...state.messages, response],
+              result: null,
+              needsRepair: true,
+            };
+          }
+        }
+
+        if (!response.tool_calls?.length) {
+          try {
+            return {
+              messages: [...state.messages, response],
+              result: parseAgentMessage(response),
+              needsRepair: false,
+            };
+          } catch {
+            return {
+              messages: [...state.messages, response],
+              result: null,
+              needsRepair: true,
+            };
+          }
         }
 
         return {
           messages: [...state.messages, response],
-          result: response.tool_calls?.length
-            ? null
-            : this.parse(response, agentResultSchema),
+          result: null,
+          needsRepair: false,
         };
+      })
+      .addNode("repair", async (state) => {
+        const last = state.messages.at(-1) as AIMessage;
+        const messages = [...state.messages];
+
+        messages[0] = new SystemMessage(
+          `${(state.messages[0] as SystemMessage).content}\nFinal formatting correction: finish_response and shopping tools are unavailable in this phase. For this correction, return the required native JSON response instead of calling finish_response. Include text, showCart, productIds, clarification and missingInformation. Use only products already retrieved in this request. For a greeting or capability answer use productIds [], clarification null, missingInformation false and showCart false. Preserve any unresolved clarification. Do not perform or claim additional cart actions.`,
+        );
+
+        // Close an invalid finish_response call before asking for a correction.
+        // This is a formatting retry only: no shopping tools are offered or run.
+        for (const call of last.tool_calls ?? []) {
+          if (!call.id)
+            throw new DomainError(
+              "MODEL_INVALID_OUTPUT",
+              "The model returned an invalid final result.",
+            );
+
+          messages.push(
+            new ToolMessage({
+              tool_call_id: call.id,
+              name: finishTool,
+              content:
+                "The final response did not match the required schema. No tool or cart action was performed by this call.",
+            }),
+          );
+        }
+
+        messages.push(
+          new HumanMessage(
+            "Correct the format of the preceding final response using the required schema.",
+          ),
+        );
+
+        const response = await this.invoke(
+          messages,
+          {
+            response_format: responseFormat("agent_result", agentResultSchema),
+          },
+          signal,
+          model,
+        );
+
+        try {
+          return {
+            messages: [...messages, response],
+            result: parseAgentMessage(response),
+            needsRepair: false,
+          };
+        } catch {
+          throw new DomainError(
+            "MODEL_INVALID_OUTPUT",
+            "The model returned an invalid result.",
+          );
+        }
       })
       .addNode("tools", async (state) => {
         const response = state.messages.at(-1) as AIMessage;
@@ -321,7 +513,11 @@ export class OpenRouterProvider implements Provider {
               "The model returned an invalid tool call.",
             );
 
-          const result = await gateway.call(call.name, call.args);
+          const result = await gateway.call(
+            call.name,
+            normalizeToolArguments(call.name, call.args),
+          );
+
           const content = JSON.stringify(result);
 
           if (content.length > 40000)
@@ -342,10 +538,13 @@ export class OpenRouterProvider implements Provider {
         return { messages: [...state.messages, ...outputs] };
       })
       .addEdge(START, "agent")
-      .addConditionalEdges("agent", (state) => (state.result ? END : "tools"), [
-        END,
-        "tools",
-      ])
+      .addConditionalEdges(
+        "agent",
+        (state) =>
+          state.result ? END : state.needsRepair ? "repair" : "tools",
+        [END, "repair", "tools"],
+      )
+      .addEdge("repair", END)
       .addEdge("tools", "agent")
       .compile();
 
@@ -353,11 +552,13 @@ export class OpenRouterProvider implements Provider {
       {
         messages: [
           new SystemMessage(
-            `${sharedPolicy}\n${role === "action" ? actionPrompt : knowledgePrompt}`,
+            `${sharedPolicy}\n${role === "action" ? actionPrompt : knowledgePrompt}\nThe last user message is the current customer request. The preceding JSON envelope supplies background context only.${context.needsClarification ? "\nThe router requires clarification. Use read tools if needed to identify candidates, then finish with a focused, non-null clarification question. Do not make cart changes or present a completed answer." : ""}`,
           ),
           new HumanMessage(this.context(context)),
+          new HumanMessage(context.message),
         ],
         result: null,
+        needsRepair: false,
       },
       { signal, recursionLimit: this.config.MAX_LLM_CALLS * 2 + 2 },
     );
@@ -381,6 +582,7 @@ export class OpenRouterProvider implements Provider {
       }),
       responseSchema,
       signal,
+      this.simpleModel,
     );
   }
 }

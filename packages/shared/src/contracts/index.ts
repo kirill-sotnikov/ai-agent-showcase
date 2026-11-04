@@ -252,8 +252,29 @@ export const clientCommandSchema = z.discriminatedUnion("type", [
   command("heartbeat.pong", z.strictObject({})),
 ]);
 
+export const decisionDiagnosticsSchema = z.strictObject({
+  guardConfidence: z.number().min(0).max(1),
+  routeConfidence: z.number().min(0).max(1),
+  complexityConfidence: z.number().min(0).max(1),
+  decisionThreshold: z.number().min(0.5).max(1),
+  decisionRoute: z.enum([
+    "QUESTION",
+    "COMMAND",
+    "MIXED",
+    "CLARIFICATION",
+    "OUT_OF_SCOPE",
+  ]),
+  verificationReasons: z
+    .array(z.enum(["guard_uncertain", "guard_confidence", "route_confidence"]))
+    .max(3),
+});
+
 const detailsSchema = z.strictObject({
+  ...decisionDiagnosticsSchema.partial().shape,
   guardVerdict: z.enum(["VALID", "SPAM", "UNCERTAIN"]).optional(),
+  decisionMs: z.number().int().nonnegative().optional(),
+  verificationMs: z.number().int().nonnegative().optional(),
+  verificationUsed: z.boolean().optional(),
   tool: toolNameSchema.optional(),
   productIds: z.array(idSchema).max(200).optional(),
   query: z.string().max(200).optional(),

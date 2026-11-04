@@ -56,7 +56,7 @@ function formatEvent(event: ServerEvent, userMessage?: string): string | null {
   let line = parts.join(" ");
 
   if ("details" in payload && payload.details)
-    line += `\n  ${JSON.stringify(payload.details)}`;
+    line += ` ${JSON.stringify(payload.details)}`;
 
   return event.type === "request.accepted" ? `\n${line}` : line;
 }

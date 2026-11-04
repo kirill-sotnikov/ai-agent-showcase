@@ -753,7 +753,8 @@ it("stops the LangGraph tool loop at the shared model call budget", async () => 
         expect(previousTools).toHaveLength(1);
 
         expect(previousTools[0].tool_call_id).toBe(
-          body.messages[2].tool_calls![0].id,
+          body.messages.find((message) => message.tool_calls?.length)
+            ?.tool_calls?.[0].id,
         );
 
         expect(JSON.parse(previousTools[0].content)).toHaveProperty("cart");
@@ -859,3 +860,157 @@ it("finishes the tool graph through a validated result tool without executing it
 
   expect(gateway.calls).toBe(0);
 });
+
+it("repairs a plain-text greeting once using the same selected model without shopping tools", async () => {
+  let requests = 0;
+
+  const result = {
+    text: "Hi! How can I help you shop?",
+    showCart: false,
+    productIds: [],
+    clarification: null,
+    missingInformation: false,
+  };
+
+  const provider = await mockProvider(
+    (body) => {
+      requests++;
+      expect(body.model).toBe("configured-simple-model");
+
+      if (requests === 1) {
+        expect(body.messages[0].content).toContain("calling finish_response");
+
+        const output = response(null, body.model);
+
+        output.choices[0].message.content = "Hi! How can I help you shop?";
+
+        return output;
+      }
+
+      expect(body.tools).toBeUndefined();
+      expect(body.response_format?.json_schema.name).toBe("agent_result");
+      expect(body.messages[0].content).toContain("Final formatting correction");
+
+      return response(result, body.model);
+    },
+    { MODEL_SIMPLE: "configured-simple-model" },
+  );
+
+  const snapshot = snapshotOf(initialState());
+
+  snapshot.cart.items = [{ productId: seedProducts[0].id, quantity: 1 }];
+
+  const signal = new AbortController().signal;
+  const gateway = new ToolGateway("knowledge", snapshot, 12, signal, () => {});
+
+  await expect(
+    provider.execute(
+      "knowledge",
+      { message: "hi", baseRevision: 0, snapshot, complexity: "SIMPLE" },
+      gateway,
+      signal,
+    ),
+  ).resolves.toEqual(result);
+
+  expect(requests).toBe(2);
+  expect(gateway.calls).toBe(0);
+  expect(gateway.draft.operations).toEqual([]);
+  expect(gateway.draft.cart).toEqual(snapshot.cart);
+});
+
+it("acknowledges an invalid final tool call before a formatting correction", async () => {
+  let requests = 0;
+
+  const provider = await mockProvider((body) => {
+    requests++;
+    if (requests === 1)
+      return response(null, body.model, {
+        name: "finish_response",
+        arguments: { text: "Hello!" },
+      });
+
+    expect(body.tools).toBeUndefined();
+
+    const assistant = body.messages.find(
+      (message) => message.tool_calls?.length,
+    );
+
+    const acknowledgment = body.messages.find(
+      (message) => message.role === "tool",
+    );
+
+    expect(acknowledgment?.tool_call_id).toBe(assistant?.tool_calls?.[0].id);
+
+    return response(
+      {
+        text: "Hello!",
+        showCart: false,
+        productIds: [],
+        clarification: null,
+        missingInformation: false,
+      },
+      body.model,
+    );
+  });
+
+  const snapshot = snapshotOf(initialState());
+  const signal = new AbortController().signal;
+  const gateway = new ToolGateway("knowledge", snapshot, 12, signal, () => {});
+
+  await expect(
+    provider.execute(
+      "knowledge",
+      { message: "hi", baseRevision: 0, snapshot },
+      gateway,
+      signal,
+    ),
+  ).resolves.toMatchObject({ text: "Hello!", productIds: [] });
+
+  expect(requests).toBe(2);
+  expect(gateway.calls).toBe(0);
+});
+
+it.each([1, 8])(
+  "bounds final-format correction within the request's %s model-call budget",
+  async (maxCalls) => {
+    let requests = 0;
+
+    const provider = await mockProvider(
+      (body) => {
+        requests++;
+
+        const output = response(null, body.model);
+
+        output.choices[0].message.content = "still not a structured result";
+
+        return output;
+      },
+      { MAX_LLM_CALLS: String(maxCalls) },
+    );
+
+    const snapshot = snapshotOf(initialState());
+    const signal = new AbortController().signal;
+
+    const gateway = new ToolGateway(
+      "knowledge",
+      snapshot,
+      12,
+      signal,
+      () => {},
+    );
+
+    await expect(
+      provider.execute(
+        "knowledge",
+        { message: "hi", baseRevision: 0, snapshot },
+        gateway,
+        signal,
+      ),
+    ).rejects.toMatchObject({
+      code: maxCalls === 1 ? "LIMIT_EXCEEDED" : "MODEL_INVALID_OUTPUT",
+    });
+
+    expect(requests).toBe(maxCalls === 1 ? 1 : 2);
+    expect(gateway.calls).toBe(0);
+  },
+);

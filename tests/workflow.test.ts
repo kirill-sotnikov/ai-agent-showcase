@@ -979,6 +979,30 @@ describe("controlled workflow", () => {
 });
 
 describe("configuration", () => {
+  it("reads all model tiers and validates the decision confidence threshold", () => {
+    const config = readConfig({
+      MODEL: "main",
+      MODEL_FAST: "typesafe/jev-1.14",
+      MODEL_SIMPLE: "simple",
+      DECISION_CONFIDENCE_THRESHOLD: "0.85",
+    });
+
+    expect(config).toMatchObject({
+      MODEL: "main",
+      MODEL_FAST: "typesafe/jev-1.14",
+      MODEL_SIMPLE: "simple",
+      DECISION_CONFIDENCE_THRESHOLD: 0.85,
+    });
+
+    expect(readConfig({}).DECISION_CONFIDENCE_THRESHOLD).toBe(0.7);
+
+    expect(() =>
+      readConfig({ DECISION_CONFIDENCE_THRESHOLD: "1.1" }),
+    ).toThrow();
+
+    expect(() => readConfig({ MODEL_FAST: " " })).toThrow();
+  });
+
   it("uses the OpenRouter key and MODEL without falling back to legacy OpenAI settings", () => {
     const config = readConfig({
       OPENROUTER_API_KEY: "configured-key",

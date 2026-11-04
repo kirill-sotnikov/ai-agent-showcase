@@ -111,6 +111,54 @@ async function gradeResult(test: ShoppingScenario, result: ShoppingResult) {
 }
 
 describe("Promptfoo shopping evaluations", () => {
+  it.each([
+    "Hi! Note that I can't add or remove cart items myself, so changes need to be made through the cart controls.",
+    "I can’t make cart changes, but I can help you decide what to add.",
+    "I cannot remove items from your cart. Please use the cart controls.",
+  ])("rejects the false capability claim: %s", async (text) => {
+    const test = scenario("text-greeting");
+    const result = await runShoppingScenario(test, { config, live: false });
+
+    result.messages = [text];
+
+    const report = await gradeResult(test, result);
+
+    expect(report.stats).toMatchObject({
+      successes: 0,
+      failures: 1,
+      errors: 0,
+    });
+
+    expect(report.results[0].namedScores).toMatchObject({
+      outcome: 1,
+      cart: 1,
+      answer_exclusions: 0,
+    });
+  });
+
+  it("accepts accurate cart capabilities while offering manual controls as an option", async () => {
+    const test = scenario("text-capabilities");
+    const result = await runShoppingScenario(test, { config, live: false });
+
+    result.messages = [
+      "I can compare products, add and remove items from your cart, and change quantities when you ask. You can also use the cart controls.",
+    ];
+
+    const report = await gradeResult(test, result);
+
+    expect(report.stats).toMatchObject({
+      successes: 1,
+      failures: 0,
+      errors: 0,
+    });
+
+    expect(report.results[0].namedScores).toMatchObject({
+      answer: 1,
+      answer_exclusions: 1,
+      no_tools: 1,
+    });
+  });
+
   it("rejects wrong products even when the request completed and the cart stayed unchanged", async () => {
     const test = scenario("search-lamp");
     const result = await runShoppingScenario(test, { config, live: false });
