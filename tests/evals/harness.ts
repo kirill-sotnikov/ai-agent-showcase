@@ -7,7 +7,7 @@ import { commitSummary, DomainError } from "@shop/shared/domain";
 import { seedProducts } from "@shop/shared/defaults";
 import type { Config } from "../../packages/service/src/config/index.js";
 import { FakeProvider } from "../../packages/service/src/ai/llm/fake.js";
-import { OpenAIProvider } from "../../packages/service/src/ai/llm/openai.js";
+import { OpenRouterProvider } from "../../packages/service/src/ai/llm/openrouter.js";
 import type { Provider } from "../../packages/service/src/ai/llm/types.js";
 import { runWorkflow } from "../../packages/service/src/ai/orchestrator/workflow.js";
 import {
@@ -57,16 +57,28 @@ export async function runShoppingScenario(
   const snapshot = snapshotOf(state);
 
   const provider: Provider = live
-    ? new OpenAIProvider(config)
+    ? new OpenRouterProvider(config)
     : new FakeProvider();
 
-  if (scenario.fault === "malformed-route")
-    provider.route = async () => ({ intent: "INVENTED" }) as never;
+  if (scenario.fault === "malformed-route") {
+    if (provider.assess)
+      provider.assess = async () =>
+        ({
+          guard: { verdict: "VALID" },
+          route: { intent: "INVENTED" },
+          complexity: "COMPLEX",
+        }) as never;
+    else provider.route = async () => ({ intent: "INVENTED" }) as never;
+  }
 
-  if (scenario.fault === "provider-failure")
-    provider.guard = async () => {
+  if (scenario.fault === "provider-failure") {
+    const fail = async (): Promise<never> => {
       throw new DomainError("MODEL_UNAVAILABLE", "The model is unavailable.");
     };
+
+    if (provider.assess) provider.assess = fail;
+    else provider.guard = fail;
+  }
 
   if (scenario.fault === "action-response-failure")
     provider.completeAction = async () => {
@@ -192,7 +204,7 @@ export async function runShoppingScenario(
   result.durationMs = Math.round(performance.now() - started);
 
   result.usage =
-    provider instanceof OpenAIProvider ? { ...provider.usage } : null;
+    provider instanceof OpenRouterProvider ? { ...provider.usage } : null;
 
   return result;
 }

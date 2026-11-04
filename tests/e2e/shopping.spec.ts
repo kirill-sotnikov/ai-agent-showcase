@@ -561,3 +561,39 @@ test("a comparison follow-up answers the question without repeating a product ca
 
   await expect(page.getByTestId("cart-total")).toHaveText("$0.00");
 });
+
+test("clears every cart line through chat and preserves the empty cart after reload", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await send(page, "Add the Arc Desk Lamp");
+  await completed(page);
+  await send(page, "Add the Studio Wireless Headphones");
+  await completed(page);
+
+  const cart = page.getByRole("region", { name: "Cart", exact: true });
+
+  await expect(cart.getByTestId("cart-total")).toContainText("$168.00");
+  await send(page, "remove all items from cart");
+  await completed(page);
+  await expect(cart.getByTestId("cart-total")).toContainText("$0.00");
+
+  await expect(
+    cart.getByRole("heading", { name: "Arc Desk Lamp" }),
+  ).toHaveCount(0);
+
+  await expect(
+    cart.getByRole("heading", { name: "Studio Wireless Headphones" }),
+  ).toHaveCount(0);
+
+  await expect(
+    page.locator('[data-message-role="assistant"]').last(),
+  ).toContainText("Cart saved.");
+
+  await expect(
+    page.getByRole("log", { name: "Workflow output" }),
+  ).not.toContainText("Invalid tool arguments");
+
+  await page.reload();
+  await expect(cart.getByTestId("cart-total")).toContainText("$0.00");
+});

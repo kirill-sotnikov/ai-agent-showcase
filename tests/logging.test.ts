@@ -80,7 +80,18 @@ it("records the guard verdict without logging conversation contents", () => {
       stage: "checking",
       agent: "guard",
       label: "Checking request",
-      details: { guardVerdict: "UNCERTAIN" },
+      details: {
+        guardVerdict: "UNCERTAIN",
+        decisionMs: 120,
+        verificationMs: 700,
+        verificationUsed: true,
+        guardConfidence: 0.99,
+        routeConfidence: 0.55,
+        complexityConfidence: 0.99,
+        decisionThreshold: 0.7,
+        decisionRoute: "MIXED",
+        verificationReasons: ["route_confidence"],
+      },
     },
     100,
   );
@@ -88,5 +99,14 @@ it("records the guard verdict without logging conversation contents", () => {
   expect(logger.info.mock.calls[0][0]).toMatchObject({
     agent: "guard",
     guardVerdict: "UNCERTAIN",
+    decisionMs: 120,
+    verificationMs: 700,
+    verificationUsed: true,
+    guardConfidence: 0.99,
+    routeConfidence: 0.55,
+    complexityConfidence: 0.99,
+    decisionThreshold: 0.7,
+    decisionRoute: "MIXED",
+    verificationReasons: ["route_confidence"],
   });
 });

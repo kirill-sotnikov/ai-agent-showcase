@@ -28,6 +28,7 @@ export interface ShoppingScenario {
     errorCode?: string;
     showCart?: boolean;
     answerContains?: string[];
+    answerNotContains?: string[];
     noTools?: boolean;
   };
 }
@@ -53,6 +54,16 @@ export const shoppingResultSchema = z.object({
       inputTokens: z.number().nonnegative(),
       outputTokens: z.number().nonnegative(),
       calls: z.number().nonnegative(),
+      byModel: z
+        .record(
+          z.string(),
+          z.object({
+            inputTokens: z.number().nonnegative(),
+            outputTokens: z.number().nonnegative(),
+            calls: z.number().nonnegative(),
+          }),
+        )
+        .optional(),
     })
     .nullable(),
 });

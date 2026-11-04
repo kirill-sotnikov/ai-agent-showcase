@@ -127,6 +127,27 @@ export function scenarioAssertions(scenario: ShoppingScenario): Assertion[] {
       ),
     );
 
+  if (scenario.expected.answerNotContains) {
+    const normalizedAnswer = (text: string) =>
+      text.toLowerCase().replace(/[’‘]/g, "'");
+
+    assertions.push(
+      assertion("answer_exclusions", (result) => {
+        const text = normalizedAnswer(result.messages.join(" "));
+
+        const forbidden = scenario.expected.answerNotContains!.filter(
+          (phrase) => text.includes(normalizedAnswer(phrase)),
+        );
+
+        return grade(
+          forbidden.length === 0,
+          "The answer does not contain unsupported capability claims",
+          `Unexpected answer content: ${forbidden.join(", ")}`,
+        );
+      }),
+    );
+  }
+
   if (scenario.expected.noTools)
     assertions.push(
       assertion("no_tools", (result) =>

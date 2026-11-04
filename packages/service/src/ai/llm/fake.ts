@@ -89,6 +89,34 @@ export class FakeProvider implements Provider {
       showCart: role === "action",
     };
 
+    if (
+      role === "action" &&
+      /^(?:remove|delete) all (?:items|products) from (?:(?:my|the) )?cart[.!]?$/.test(
+        text,
+      )
+    ) {
+      const items = context.snapshot.cart.items;
+
+      for (const item of items) {
+        await gateway.call("get_product", { productId: item.productId });
+
+        await gateway.call("remove_from_cart", {
+          productId: item.productId,
+          quantity: null,
+        });
+      }
+
+      return {
+        ...base,
+        text: items.length
+          ? "All items were removed from the cart draft."
+          : "Your cart is already empty.",
+        productIds: items.map((item) => item.productId),
+        clarification: null,
+        missingInformation: false,
+      };
+    }
+
     if (role === "knowledge") {
       const conversational = /^(hi|hello|hey)[!. ]*$/.test(text)
         ? "Hello! What would you like to know about the products?"
@@ -97,7 +125,7 @@ export class FakeProvider implements Provider {
           : /what can you (do|help)|how (do|can) (you|i)|can you help/.test(
                 text,
               )
-            ? "I can help you find and compare products, answer questions about the catalog, and update your cart when you ask."
+            ? "I can help you find and compare products, answer questions about the catalog, add and remove cart items, and change quantities when you ask."
             : null;
 
       if (conversational)

@@ -19,6 +19,23 @@ export function logExecution<T extends EventType>(
     agent: "agent" in payload ? payload.agent : undefined,
     guardVerdict:
       "details" in payload ? payload.details?.guardVerdict : undefined,
+    decisionMs: "details" in payload ? payload.details?.decisionMs : undefined,
+    verificationMs:
+      "details" in payload ? payload.details?.verificationMs : undefined,
+    verificationUsed:
+      "details" in payload ? payload.details?.verificationUsed : undefined,
+    guardConfidence:
+      "details" in payload ? payload.details?.guardConfidence : undefined,
+    routeConfidence:
+      "details" in payload ? payload.details?.routeConfidence : undefined,
+    complexityConfidence:
+      "details" in payload ? payload.details?.complexityConfidence : undefined,
+    decisionThreshold:
+      "details" in payload ? payload.details?.decisionThreshold : undefined,
+    decisionRoute:
+      "details" in payload ? payload.details?.decisionRoute : undefined,
+    verificationReasons:
+      "details" in payload ? payload.details?.verificationReasons : undefined,
     tool: "details" in payload ? payload.details?.tool : undefined,
     durationMs: "durationMs" in payload ? payload.durationMs : undefined,
     code: "error" in payload ? payload.error?.code : undefined,
