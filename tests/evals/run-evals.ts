@@ -22,11 +22,11 @@ const config = readConfig();
 async function main() {
   await mkdir(dirname(outputPath), { recursive: true });
 
-  if (live && !readiness({ ...config, LLM_PROVIDER: "openai" }).ready) {
+  if (live && !readiness({ ...config, LLM_PROVIDER: "openrouter" }).ready) {
     const report = {
       status: "skipped",
-      reason: "Live evaluations need server OPENAI_API_KEY and OPENAI_MODEL.",
-      model: config.OPENAI_MODEL ?? null,
+      reason: "Live evaluations need server OPENROUTER_API_KEY and MODEL.",
+      model: config.MODEL ?? null,
     };
 
     await writeFile(outputPath, JSON.stringify(report, null, 2) + "\n");
@@ -74,8 +74,8 @@ async function main() {
     JSON.stringify({
       framework: "promptfoo",
       evalId: evaluation.id,
-      provider: live ? "openai" : "fake",
-      model: live ? config.OPENAI_MODEL : "deterministic-v1",
+      provider: live ? "openrouter" : "fake",
+      model: live ? config.MODEL : "deterministic-v1",
       estimatedUSD: budget?.spentUSD ?? 0,
       ...report.stats,
     }),

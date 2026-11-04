@@ -7,9 +7,9 @@ const envSchema = z
       .default("development"),
     HOST: z.string().min(1).default("127.0.0.1"),
     PORT: z.coerce.number().int().min(0).max(65535).default(3001),
-    LLM_PROVIDER: z.enum(["openai", "fake"]).default("openai"),
-    OPENAI_API_KEY: z.string().optional(),
-    OPENAI_MODEL: z.string().optional(),
+    LLM_PROVIDER: z.enum(["openrouter", "fake"]).default("openrouter"),
+    OPENROUTER_API_KEY: z.string().trim().optional(),
+    MODEL: z.string().trim().optional(),
     TG_NOTIFY_BOT_TOKEN: z.string().optional(),
     TG_NOTIFY_BOT_CHAT: z.string().optional(),
     ALLOWED_ORIGINS: z
@@ -44,13 +44,16 @@ export function readConfig(
 export function readiness(config: Config) {
   if (config.LLM_PROVIDER === "fake")
     return { ready: true, reason: "Development fake provider" };
-  if (!config.OPENAI_API_KEY || config.OPENAI_API_KEY.startsWith("your-"))
+  if (
+    !config.OPENROUTER_API_KEY ||
+    config.OPENROUTER_API_KEY.startsWith("your-")
+  )
     return {
       ready: false,
-      reason: "OPENAI_API_KEY is required on the server.",
+      reason: "OPENROUTER_API_KEY is required on the server.",
     };
-  if (!config.OPENAI_MODEL || config.OPENAI_MODEL.startsWith("your-"))
-    return { ready: false, reason: "OPENAI_MODEL is required on the server." };
+  if (!config.MODEL || config.MODEL.startsWith("your-"))
+    return { ready: false, reason: "MODEL is required on the server." };
 
   return {
     ready: true,

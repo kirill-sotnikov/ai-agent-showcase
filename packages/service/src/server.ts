@@ -13,7 +13,7 @@ import {
 import { commitSummary, DomainError } from "@shop/shared/domain";
 import { readConfig, readiness, type Config } from "./config/index.js";
 import { FakeProvider } from "./ai/llm/fake.js";
-import { OpenAIProvider } from "./ai/llm/openai.js";
+import { OpenRouterProvider } from "./ai/llm/openrouter.js";
 import type { Provider } from "./ai/llm/types.js";
 import { runWorkflow, type Emit } from "./ai/orchestrator/workflow.js";
 import { logExecution } from "./observability/logger.js";
@@ -430,12 +430,12 @@ export function createServer(
               providerFactory?.() ??
               (config.LLM_PROVIDER === "fake"
                 ? new FakeProvider()
-                : new OpenAIProvider(config, (usage) =>
+                : new OpenRouterProvider(config, (usage) =>
                     server.log.info(
                       {
                         requestId,
                         stage: "model",
-                        model: config.OPENAI_MODEL,
+                        model: config.MODEL,
                         promptVersion: "shopping-v1",
                         ...usage,
                       },

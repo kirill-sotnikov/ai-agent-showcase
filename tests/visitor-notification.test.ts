@@ -130,7 +130,7 @@ describe("visitor notification endpoint", () => {
     const server = createServer(
       readConfig({
         NODE_ENV: options.nodeEnv ?? "test",
-        LLM_PROVIDER: options.nodeEnv === "production" ? "openai" : "fake",
+        LLM_PROVIDER: options.nodeEnv === "production" ? "openrouter" : "fake",
         ALLOWED_ORIGINS: "http://test.local",
         ...(options.configured !== false
           ? { TG_NOTIFY_BOT_TOKEN: "test-token", TG_NOTIFY_BOT_CHAT: "1234" }

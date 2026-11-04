@@ -10,17 +10,17 @@ The interface includes a chat, a shopping cart, and an execution log showing req
 
 The project is a TypeScript monorepo with three packages:
 
-| Package            | Purpose                                     | Technologies                             |
-| ------------------ | ------------------------------------------- | ---------------------------------------- |
-| `packages/web`     | Interface, user state, and WebSocket client | Next.js, React, Zustand, vanilla-extract |
-| `packages/service` | Server, AI orchestrator, and tools          | Fastify, WebSocket, OpenAI SDK           |
-| `packages/shared`  | Shared contracts and cart rules             | Zod, TypeScript                          |
+| Package            | Purpose                                     | Technologies                                        |
+| ------------------ | ------------------------------------------- | --------------------------------------------------- |
+| `packages/web`     | Interface, user state, and WebSocket client | Next.js, React, Zustand, vanilla-extract            |
+| `packages/service` | Server, AI orchestrator, and tools          | Fastify, WebSocket, LangGraph, LangChain OpenRouter |
+| `packages/shared`  | Shared contracts and cart rules             | Zod, TypeScript                                     |
 
-The browser connects to Next.js, which proxies WebSocket requests to Fastify. The server runs the AI workflow and sends events to the execution log. The catalog, cart, settings, and history are stored in `localStorage`; the server has no database. The OpenAI key is used only on the server.
+The browser connects to Next.js, which proxies WebSocket requests to Fastify. The server runs the AI workflow and sends events to the execution log. The catalog, cart, settings, and history are stored in `localStorage`; the server has no database. The OpenRouter key is used only on the server.
 
 ### AI Agent
 
-The orchestrator starts Guard and Router in parallel, each with its own prompt. Shopping tools run only after Guard allows the request and Router returns a valid route. Spam or a failed Guard check cancels pending routing; speculative routing errors cannot override a spam verdict. Guard, Router, Knowledge, and Action use the model configured in `OPENAI_MODEL`. Composer is a deterministic application function and does not call the model.
+LangGraph `StateGraph` controls checks, routing, Knowledge/Action, validation, persistence, and response nodes. A nested graph runs the model/tool loop through `ChatOpenRouter`. Guard and Router start in parallel, each with its own prompt. Shopping tools run only after Guard allows the request and Router returns a valid route. Spam or a failed Guard check cancels pending routing; speculative routing errors cannot override a spam verdict. Guard, Router, Knowledge, and Action use the model configured in `MODEL`. Composer is a deterministic application function and does not call the model.
 
 ```mermaid
 flowchart TD
@@ -89,7 +89,7 @@ corepack yarn install --immutable
 cp .env.example .env
 ```
 
-Set `OPENAI_API_KEY` and `OPENAI_MODEL` in `.env`, then start the application:
+Set `OPENROUTER_API_KEY` and `MODEL` (an OpenRouter model ID, such as `provider/model`) in `.env`. The model must support tool calling and JSON Schema structured output; requests require compatible provider endpoints. `LLM_PROVIDER=openrouter` is the default. The service and live evaluations load `.env` automatically. Then start the application:
 
 ```sh
 yarn dev

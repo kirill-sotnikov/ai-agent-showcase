@@ -7,7 +7,7 @@ import { commitSummary, DomainError } from "@shop/shared/domain";
 import { seedProducts } from "@shop/shared/defaults";
 import type { Config } from "../../packages/service/src/config/index.js";
 import { FakeProvider } from "../../packages/service/src/ai/llm/fake.js";
-import { OpenAIProvider } from "../../packages/service/src/ai/llm/openai.js";
+import { OpenRouterProvider } from "../../packages/service/src/ai/llm/openrouter.js";
 import type { Provider } from "../../packages/service/src/ai/llm/types.js";
 import { runWorkflow } from "../../packages/service/src/ai/orchestrator/workflow.js";
 import {
@@ -57,7 +57,7 @@ export async function runShoppingScenario(
   const snapshot = snapshotOf(state);
 
   const provider: Provider = live
-    ? new OpenAIProvider(config)
+    ? new OpenRouterProvider(config)
     : new FakeProvider();
 
   if (scenario.fault === "malformed-route")
@@ -192,7 +192,7 @@ export async function runShoppingScenario(
   result.durationMs = Math.round(performance.now() - started);
 
   result.usage =
-    provider instanceof OpenAIProvider ? { ...provider.usage } : null;
+    provider instanceof OpenRouterProvider ? { ...provider.usage } : null;
 
   return result;
 }

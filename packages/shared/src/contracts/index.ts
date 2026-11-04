@@ -303,7 +303,7 @@ const event = <T extends string, S extends z.ZodType>(type: T, payload: S) =>
 
 export const eventPayloads = {
   "connection.ready": z.strictObject({
-    provider: z.enum(["fake", "openai"]),
+    provider: z.enum(["fake", "openrouter"]),
     ready: z.boolean(),
   }),
   "heartbeat.ping": z.strictObject({}),

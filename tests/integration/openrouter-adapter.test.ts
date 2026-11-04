@@ -1,10 +1,9 @@
 import { afterEach, expect, it } from "vitest";
 import Fastify from "fastify";
-import OpenAI from "openai";
 import type { AddressInfo } from "node:net";
 import { seedProducts } from "@shop/shared/defaults";
 import { serverEventSchema, type ServerEvent } from "@shop/shared/contracts";
-import { OpenAIProvider } from "../../packages/service/src/ai/llm/openai.js";
+import { OpenRouterProvider } from "../../packages/service/src/ai/llm/openrouter.js";
 import { FakeProvider } from "../../packages/service/src/ai/llm/fake.js";
 import type { Provider } from "../../packages/service/src/ai/llm/types.js";
 import { runWorkflow } from "../../packages/service/src/ai/orchestrator/workflow.js";
@@ -23,52 +22,69 @@ afterEach(async () => {
   await Promise.all(servers.splice(0).map((server) => server.close()));
 });
 
+interface CompletionRequest {
+  model: string;
+  max_tokens: number;
+  provider: { require_parameters: boolean };
+  response_format?: {
+    type: string;
+    json_schema: { name: string; strict: boolean };
+  };
+  messages: {
+    role: string;
+    content: string;
+    tool_call_id?: string;
+    tool_calls?: { id: string }[];
+  }[];
+  tools?: {
+    type: string;
+    function: {
+      name: string;
+      strict: boolean;
+      parameters: { additionalProperties: boolean };
+    };
+  }[];
+}
+
+function requestName(body: CompletionRequest) {
+  return body.response_format?.json_schema.name ?? "agent_result";
+}
+
 function response(
   data: unknown,
   model: string,
   call?: { name: string; arguments: unknown },
 ) {
   return {
-    id: `resp_${crypto.randomUUID()}`,
-    object: "response",
-    created_at: 1,
-    status: "completed",
+    id: `gen_${crypto.randomUUID()}`,
+    object: "chat.completion",
+    created: 1,
     model,
-    error: null,
-    incomplete_details: null,
-    output: call
-      ? [
-          {
-            type: "function_call",
-            id: `fc_${crypto.randomUUID()}`,
-            call_id: `call_${crypto.randomUUID()}`,
-            name: call.name,
-            arguments: JSON.stringify(call.arguments),
-            status: "completed",
-          },
-        ]
-      : [
-          {
-            id: `msg_${crypto.randomUUID()}`,
-            type: "message",
-            role: "assistant",
-            status: "completed",
-            content: [
-              {
-                type: "output_text",
-                text: JSON.stringify(data),
-                annotations: [],
-              },
-            ],
-          },
-        ],
-    usage: {
-      input_tokens: 50,
-      output_tokens: 20,
-      total_tokens: 70,
-      input_tokens_details: { cached_tokens: 0 },
-      output_tokens_details: { reasoning_tokens: 0 },
-    },
+    choices: [
+      {
+        index: 0,
+        finish_reason: call ? "tool_calls" : "stop",
+        message: {
+          role: "assistant",
+          content: call ? null : JSON.stringify(data),
+          ...(call
+            ? {
+                tool_calls: [
+                  {
+                    id: `call_${crypto.randomUUID()}`,
+                    type: "function",
+                    function: {
+                      name: call.name,
+                      arguments: JSON.stringify(call.arguments),
+                    },
+                  },
+                ],
+              }
+            : {}),
+        },
+      },
+    ],
+    usage: { prompt_tokens: 50, completion_tokens: 20, total_tokens: 70 },
   };
 }
 
@@ -77,7 +93,7 @@ it("uses the configured model for guard, router, dependent tools, and Action res
 
   servers.push(server);
 
-  const bodies: Record<string, unknown>[] = [];
+  const bodies: CompletionRequest[] = [];
 
   let allowGuard!: () => void;
 
@@ -87,24 +103,14 @@ it("uses the configured model for guard, router, dependent tools, and Action res
 
   let toolRound = 0;
 
-  server.post("/responses", async (request) => {
-    const body = request.body as {
-      model: string;
-      stream?: boolean;
-      text: { format: { name: string } };
-      input: unknown;
-      tools?: {
-        name: string;
-        strict: boolean;
-        parameters: { additionalProperties: boolean };
-      }[];
-    };
+  server.post("/chat/completions", async (request) => {
+    const body = request.body as CompletionRequest;
 
     bodies.push(body);
 
     let output;
 
-    switch (body.text.format.name) {
+    switch (requestName(body)) {
       case "guard":
         // The SDK must start routing while Guard is still awaiting a response.
         await routingStarted;
@@ -126,7 +132,8 @@ it("uses the configured model for guard, router, dependent tools, and Action res
         expect(
           body.tools?.every(
             (tool) =>
-              tool.strict && tool.parameters.additionalProperties === false,
+              tool.function.strict &&
+              tool.function.parameters.additionalProperties === false,
           ),
         ).toBe(true);
 
@@ -182,17 +189,13 @@ it("uses the configured model for guard, router, dependent tools, and Action res
 
   const address = server.server.address() as AddressInfo;
 
-  const provider = new OpenAIProvider(
+  const provider = new OpenRouterProvider(
     readConfig({
-      OPENAI_API_KEY: "test-secret",
-      OPENAI_MODEL: "configured-test-model",
+      OPENROUTER_API_KEY: "test-secret",
+      MODEL: "configured-test-model",
     }),
     () => {},
-    new OpenAI({
-      apiKey: "test-secret",
-      baseURL: `http://127.0.0.1:${address.port}`,
-      maxRetries: 0,
-    }),
+    `http://127.0.0.1:${address.port}`,
   );
 
   const store = new WorkspaceStore(new MemoryStorage(), new TestLocks());
@@ -225,13 +228,18 @@ it("uses the configured model for guard, router, dependent tools, and Action res
 
   const actionResponse = bodies.at(-1)!;
 
-  expect(actionResponse.text).toMatchObject({
-    format: { name: "action_response" },
+  expect(actionResponse.response_format).toMatchObject({
+    type: "json_schema",
+    json_schema: { name: "action_response", strict: true },
   });
 
   expect(actionResponse.tools).toBeUndefined();
 
-  expect(JSON.parse(actionResponse.input as string)).toMatchObject({
+  expect(
+    JSON.parse(
+      (actionResponse.messages as CompletionRequest["messages"])[1].content,
+    ),
+  ).toMatchObject({
     context: { currentMessage: payload.message },
     receipt: { committedRevision: 1 },
     cart: { items: [{ productId: seedProducts[0].id, quantity: 1 }] },
@@ -245,12 +253,15 @@ it("uses the configured model for guard, router, dependent tools, and Action res
 
   expect(
     bodies.every(
-      (body) => body.model === "configured-test-model" && body.store === false,
+      (body) =>
+        body.model === "configured-test-model" && body.max_tokens === 1500,
     ),
   ).toBe(true);
 
   for (const body of bodies) {
-    expect(body.reasoning).toEqual({ effort: "none" });
+    expect(body.provider).toEqual({ require_parameters: true });
+    expect(body).not.toHaveProperty("parallel_tool_calls");
+    expect(body).not.toHaveProperty("reasoning");
   }
 
   expect(store.read()!.cart.items).toEqual([
@@ -344,22 +355,13 @@ it("sends prior turns and the current cart to every agent and commits a follow-u
 
   let toolRound = 0;
 
-  server.post("/responses", async (request) => {
-    const body = request.body as {
-      model: string;
-      stream?: boolean;
-      text: { format: { name: string } };
-      input: string | { role: string; content: string }[];
-    };
+  server.post("/chat/completions", async (request) => {
+    const body = request.body as CompletionRequest;
 
-    const name = body.text.format.name;
+    const name = requestName(body);
 
     if (name !== "action_response")
-      contexts.push(
-        JSON.parse(
-          typeof body.input === "string" ? body.input : body.input[0].content,
-        ),
-      );
+      contexts.push(JSON.parse(body.messages[1].content));
 
     const output = response(
       name === "guard"
@@ -382,17 +384,13 @@ it("sends prior turns and the current cart to every agent and commits a follow-u
 
   const events = await turn(
     "add one more",
-    new OpenAIProvider(
+    new OpenRouterProvider(
       readConfig({
-        OPENAI_API_KEY: "test-secret",
-        OPENAI_MODEL: "configured-test-model",
+        OPENROUTER_API_KEY: "test-secret",
+        MODEL: "configured-test-model",
       }),
       () => {},
-      new OpenAI({
-        apiKey: "test-secret",
-        baseURL: `http://127.0.0.1:${address.port}`,
-        maxRetries: 0,
-      }),
+      `http://127.0.0.1:${address.port}`,
     ),
   );
 
@@ -436,7 +434,7 @@ it("normalizes upstream errors without leaking provider payloads", async () => {
 
   servers.push(server);
 
-  server.post("/responses", (_request, reply) =>
+  server.post("/chat/completions", (_request, reply) =>
     reply.code(401).send({
       error: {
         message: "secret payload sk-private",
@@ -449,17 +447,13 @@ it("normalizes upstream errors without leaking provider payloads", async () => {
 
   const address = server.server.address() as AddressInfo;
 
-  const provider = new OpenAIProvider(
+  const provider = new OpenRouterProvider(
     readConfig({
-      OPENAI_API_KEY: "test-secret",
-      OPENAI_MODEL: "configured-test-model",
+      OPENROUTER_API_KEY: "test-secret",
+      MODEL: "configured-test-model",
     }),
     () => {},
-    new OpenAI({
-      apiKey: "test-secret",
-      baseURL: `http://127.0.0.1:${address.port}`,
-      maxRetries: 0,
-    }),
+    `http://127.0.0.1:${address.port}`,
   );
 
   await expect(
@@ -485,17 +479,13 @@ it("gives guard and router named clarification candidates without treating them 
 
   const contexts: unknown[] = [];
 
-  server.post("/responses", async (request) => {
-    const body = request.body as {
-      model: string;
-      text: { format: { name: string } };
-      input: string;
-    };
+  server.post("/chat/completions", async (request) => {
+    const body = request.body as CompletionRequest;
 
-    contexts.push(JSON.parse(body.input));
+    contexts.push(JSON.parse(body.messages[1].content));
 
     return response(
-      body.text.format.name === "guard"
+      requestName(body) === "guard"
         ? { verdict: "VALID" }
         : { intent: "COMMAND", confidence: 1, clarification: null },
       body.model,
@@ -506,14 +496,10 @@ it("gives guard and router named clarification candidates without treating them 
 
   const address = server.server.address() as AddressInfo;
 
-  const provider = new OpenAIProvider(
-    readConfig({ OPENAI_API_KEY: "test-secret", OPENAI_MODEL: "test-model" }),
+  const provider = new OpenRouterProvider(
+    readConfig({ OPENROUTER_API_KEY: "test-secret", MODEL: "test-model" }),
     () => {},
-    new OpenAI({
-      apiKey: "test-secret",
-      baseURL: `http://127.0.0.1:${address.port}`,
-      maxRetries: 0,
-    }),
+    `http://127.0.0.1:${address.port}`,
   );
 
   const snapshot = snapshotOf(initialState());
@@ -579,14 +565,10 @@ it.each([
 
     let retrieved = false;
 
-    server.post("/responses", async (request) => {
-      const body = request.body as {
-        model: string;
-        text: { format: { name: string } };
-        tools?: { name: string }[];
-      };
+    server.post("/chat/completions", async (request) => {
+      const body = request.body as CompletionRequest;
 
-      const name = body.text.format.name;
+      const name = requestName(body);
 
       requests.push(name);
       if (name === "guard") return response({ verdict: "VALID" }, body.model);
@@ -596,7 +578,10 @@ it.each([
           body.model,
         );
       expect(name).toBe("agent_result");
-      expect(body.tools?.map((tool) => tool.name)).not.toContain("add_to_cart");
+
+      expect(body.tools?.map((tool) => tool.function.name)).not.toContain(
+        "add_to_cart",
+      );
 
       if (product && !retrieved) {
         retrieved = true;
@@ -623,14 +608,10 @@ it.each([
 
     const address = server.server.address() as AddressInfo;
 
-    const provider = new OpenAIProvider(
-      readConfig({ OPENAI_API_KEY: "test", OPENAI_MODEL: "test-model" }),
+    const provider = new OpenRouterProvider(
+      readConfig({ OPENROUTER_API_KEY: "test", MODEL: "test-model" }),
       () => {},
-      new OpenAI({
-        apiKey: "test",
-        baseURL: `http://127.0.0.1:${address.port}`,
-        maxRetries: 0,
-      }),
+      `http://127.0.0.1:${address.port}`,
     );
 
     const events: ServerEvent[] = [];
@@ -668,3 +649,213 @@ it.each([
     expect(requests).not.toContain("presentation");
   },
 );
+
+async function mockProvider(
+  handler: (body: CompletionRequest) => unknown | Promise<unknown>,
+  limits: Record<string, string> = {},
+) {
+  const server = Fastify();
+
+  servers.push(server);
+
+  server.post("/chat/completions", (request) => {
+    expect(request.headers.authorization).toBe("Bearer configured-test-key");
+
+    return handler(request.body as CompletionRequest);
+  });
+
+  await server.listen({ host: "127.0.0.1", port: 0 });
+
+  const address = server.server.address() as AddressInfo;
+
+  return new OpenRouterProvider(
+    readConfig({
+      OPENROUTER_API_KEY: "configured-test-key",
+      MODEL: "configured-test-model",
+      ...limits,
+    }),
+    () => {},
+    `http://127.0.0.1:${address.port}`,
+  );
+}
+
+it.each(["malformed-json", "wrong-schema", "truncated"])(
+  "rejects %s output from OpenRouter",
+  async (failure) => {
+    const provider = await mockProvider((body) => {
+      const output = response(
+        { verdict: failure === "wrong-schema" ? "INVENTED" : "VALID" },
+        body.model,
+      );
+
+      if (failure === "malformed-json")
+        output.choices[0].message.content = "not json";
+      if (failure === "truncated") output.choices[0].finish_reason = "length";
+
+      return output;
+    });
+
+    await expect(
+      provider.guard(
+        {
+          message: "Find lamps",
+          baseRevision: 0,
+          snapshot: snapshotOf(initialState()),
+        },
+        new AbortController().signal,
+      ),
+    ).rejects.toMatchObject({ code: "MODEL_INVALID_OUTPUT" });
+  },
+);
+
+it("rejects malformed tool arguments before any tool can run", async () => {
+  const provider = await mockProvider((body) => {
+    const output = response(null, body.model, {
+      name: "add_to_cart",
+      arguments: {},
+    });
+
+    output.choices[0].message.tool_calls![0].function.arguments =
+      "{broken-json";
+
+    return output;
+  });
+
+  const snapshot = snapshotOf(initialState());
+  const signal = new AbortController().signal;
+  const gateway = new ToolGateway("action", snapshot, 12, signal, () => {});
+
+  await expect(
+    provider.execute(
+      "action",
+      { message: "Add a lamp", baseRevision: 0, snapshot },
+      gateway,
+      signal,
+    ),
+  ).rejects.toMatchObject({ code: "MODEL_INVALID_OUTPUT" });
+
+  expect(gateway.calls).toBe(0);
+  expect(gateway.draft.operations).toEqual([]);
+});
+
+it("stops the LangGraph tool loop at the shared model call budget", async () => {
+  let requests = 0;
+
+  const provider = await mockProvider(
+    (body) => {
+      requests++;
+
+      const previousTools = body.messages.filter(
+        (message) => message.role === "tool",
+      );
+
+      if (requests === 2) {
+        expect(previousTools).toHaveLength(1);
+
+        expect(previousTools[0].tool_call_id).toBe(
+          body.messages[2].tool_calls![0].id,
+        );
+
+        expect(JSON.parse(previousTools[0].content)).toHaveProperty("cart");
+      }
+
+      return response(null, body.model, { name: "get_cart", arguments: {} });
+    },
+    { MAX_LLM_CALLS: "2" },
+  );
+
+  const snapshot = snapshotOf(initialState());
+  const signal = new AbortController().signal;
+  const gateway = new ToolGateway("knowledge", snapshot, 12, signal, () => {});
+
+  await expect(
+    provider.execute(
+      "knowledge",
+      { message: "Show my cart", baseRevision: 0, snapshot },
+      gateway,
+      signal,
+    ),
+  ).rejects.toMatchObject({ code: "LIMIT_EXCEEDED" });
+
+  expect(requests).toBe(2);
+  expect(gateway.calls).toBe(2);
+  expect(provider.usage.calls).toBe(2);
+});
+
+it.each(["timeout", "cancel"])(
+  "aborts an in-flight OpenRouter request on %s",
+  async (mode) => {
+    let started!: () => void;
+
+    const requestStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+
+    const provider = await mockProvider(
+      async (body) => {
+        started();
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
+        return response({ verdict: "VALID" }, body.model);
+      },
+      { LLM_TIMEOUT_MS: mode === "timeout" ? "50" : "2000" },
+    );
+
+    const controller = new AbortController();
+
+    const result = provider.guard(
+      {
+        message: "Find lamps",
+        baseRevision: 0,
+        snapshot: snapshotOf(initialState()),
+      },
+      controller.signal,
+    );
+
+    const assertion = expect(result).rejects.toMatchObject({
+      code: mode === "timeout" ? "MODEL_TIMEOUT" : "CANCELLED",
+    });
+
+    await requestStarted;
+    if (mode === "cancel") controller.abort();
+    await assertion;
+  },
+);
+
+it("finishes the tool graph through a validated result tool without executing it on the gateway", async () => {
+  const result = {
+    text: "Hello! I can help you shop.",
+    showCart: false,
+    productIds: [],
+    clarification: null,
+    missingInformation: false,
+  };
+
+  const provider = await mockProvider((body) => {
+    expect(body.response_format).toBeUndefined();
+
+    expect(body.tools?.map((tool) => tool.function.name)).toContain(
+      "finish_response",
+    );
+
+    return response(null, body.model, {
+      name: "finish_response",
+      arguments: result,
+    });
+  });
+
+  const snapshot = snapshotOf(initialState());
+  const signal = new AbortController().signal;
+  const gateway = new ToolGateway("knowledge", snapshot, 12, signal, () => {});
+
+  await expect(
+    provider.execute(
+      "knowledge",
+      { message: "Hello", baseRevision: 0, snapshot },
+      gateway,
+      signal,
+    ),
+  ).resolves.toEqual(result);
+
+  expect(gateway.calls).toBe(0);
+});

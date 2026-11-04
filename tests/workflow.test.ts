@@ -979,18 +979,33 @@ describe("controlled workflow", () => {
 });
 
 describe("configuration", () => {
-  it("blocks fake production and explains missing OpenAI parameters", () => {
+  it("uses the OpenRouter key and MODEL without falling back to legacy OpenAI settings", () => {
+    const config = readConfig({
+      OPENROUTER_API_KEY: "configured-key",
+      MODEL: "provider/configured-model",
+      OPENAI_API_KEY: "unused-key",
+      OPENAI_MODEL: "unused-model",
+    });
+
+    expect(config.LLM_PROVIDER).toBe("openrouter");
+    expect(config.MODEL).toBe("provider/configured-model");
+    expect(config.OPENROUTER_API_KEY).toBe("configured-key");
+    expect(config).not.toHaveProperty("OPENAI_API_KEY");
+    expect(readiness(config).ready).toBe(true);
+  });
+
+  it("blocks fake production and explains missing OpenRouter parameters", () => {
     expect(() =>
       readConfig({ NODE_ENV: "production", LLM_PROVIDER: "fake" }),
     ).toThrow();
 
     expect(readiness(readConfig({}))).toMatchObject({
       ready: false,
-      reason: expect.stringContaining("OPENAI_API_KEY"),
+      reason: expect.stringContaining("OPENROUTER_API_KEY"),
     });
 
-    expect(readiness(readConfig({ OPENAI_API_KEY: "test-key" }))).toMatchObject(
-      { ready: false, reason: expect.stringContaining("OPENAI_MODEL") },
-    );
+    expect(
+      readiness(readConfig({ OPENROUTER_API_KEY: "test-key" })),
+    ).toMatchObject({ ready: false, reason: expect.stringContaining("MODEL") });
   });
 });

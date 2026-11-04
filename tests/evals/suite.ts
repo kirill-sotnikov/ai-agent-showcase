@@ -31,7 +31,7 @@ export function createShoppingSuite({
 
   const cases = limits ? scenarios.slice(0, limits.maxCases) : scenarios;
   const budget = limits ? new EvaluationBudget(limits, config) : null;
-  const providerId = `shopping:${live ? config.OPENAI_MODEL : "fake"}`;
+  const providerId = `shopping:${live ? config.MODEL : "fake"}`;
 
   const provider: ApiProvider = {
     id: () => providerId,
@@ -99,7 +99,7 @@ export function createShoppingSuite({
       vars: { message: scenario.message, scenarioId: scenario.id },
       metadata: {
         group: scenario.fault ? "resilience" : "behavior",
-        model: live ? config.OPENAI_MODEL : "deterministic-v1",
+        model: live ? config.MODEL : "deterministic-v1",
         promptVersion: PROMPT_VERSION,
       },
       assert: scenarioAssertions(scenario),
